@@ -5,7 +5,7 @@ import { FolderModal } from "@/components/grafana/modals/FolderModal";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 import { useDashboardRegistry } from "@/contexts/DashboardRegistryContext";
 import { useNavigate } from "react-router-dom";
-import { LayoutDashboard, Plus, FolderPlus, FileUp, Clock, Star, Trash2 } from "lucide-react";
+import { LayoutDashboard, Plus, FolderPlus, FileUp, Clock, Star, Trash2, Folder } from "lucide-react";
 
 function DashboardsContent() {
   const navigate = useNavigate();
@@ -14,22 +14,51 @@ function DashboardsContent() {
   const [savedDashboards, setSavedDashboards] = useState<any[]>([]);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
-    setSavedDashboards(saved);
+    const loadSavedDashboards = () => {
+      const saved = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
+      setSavedDashboards(saved);
+    };
+    
+    loadSavedDashboards();
+    
+    // Listen for storage changes to refresh the list
+    const handleStorageChange = () => {
+      loadSavedDashboards();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
   }, []);
 
   const starredDashboards = dashboards.filter(d => d.starred && !d.isNew);
   const recentDashboards = [...dashboards.filter(d => !d.isNew), ...savedDashboards]
     .sort((a, b) => new Date(b.updatedAt || b.savedAt).getTime() - new Date(a.updatedAt || a.savedAt).getTime());
   const draftDashboards = dashboards.filter(d => d.isNew);
+  
+  // Group dashboards by folder
+  const dashboardsByFolder = recentDashboards.reduce((acc, dashboard) => {
+    const folder = dashboard.folder || 'General';
+    if (!acc[folder]) acc[folder] = [];
+    acc[folder].push(dashboard);
+    return acc;
+  }, {} as Record<string, any[]>);
 
   const handleNewDashboard = () => {
     const newId = createNewDashboard();
     navigate(`/dashboard/${newId}`);
   };
 
-  const handleOpenDashboard = (id: string) => {
-    navigate(`/dashboard/${id}`);
+  const handleOpenDashboard = (dashboard: any) => {
+    if (dashboard.id) {
+      // For saved dashboards, navigate with the dashboard data
+      navigate(`/dashboard/${dashboard.id}`, { state: { dashboardData: dashboard } });
+    } else {
+      // For registry dashboards
+      navigate(`/dashboard/${dashboard.id || dashboard.uid}`);
+    }
   };
 
   return (
@@ -75,7 +104,7 @@ function DashboardsContent() {
                     className="flex items-center gap-3 p-4 bg-card border border-grafana-orange/50 rounded-lg hover:border-grafana-orange transition-colors"
                   >
                     <button
-                      onClick={() => handleOpenDashboard(dashboard.id)}
+                      onClick={() => handleOpenDashboard(dashboard)}
                       className="flex items-center gap-3 flex-1 text-left"
                     >
                       <div className="p-2 bg-grafana-orange/20 rounded">
@@ -110,7 +139,7 @@ function DashboardsContent() {
                 {starredDashboards.map((dashboard) => (
                   <button
                     key={dashboard.id}
-                    onClick={() => handleOpenDashboard(dashboard.id)}
+                    onClick={() => handleOpenDashboard(dashboard)}
                     className="flex items-center gap-3 p-4 bg-card border border-border rounded-lg hover:border-primary transition-colors text-left"
                   >
                     <div className="p-2 bg-grafana-yellow/20 rounded">
@@ -126,66 +155,73 @@ function DashboardsContent() {
             </section>
           )}
 
-          {/* Recent Section */}
-          <section>
-            <h2 className="flex items-center gap-2 text-lg font-medium text-foreground mb-4">
-              <Clock size={20} className="text-muted-foreground" />
-              Recently viewed
-            </h2>
-            <div className="bg-card border border-border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-secondary">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Folder</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Last updated</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Tags</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {recentDashboards.map((dashboard) => (
-                    <tr
-                      key={dashboard.id}
-                      onClick={() => handleOpenDashboard(dashboard.id)}
-                      className="hover:bg-secondary/50 cursor-pointer transition-colors"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <LayoutDashboard size={18} className="text-muted-foreground" />
-                          <span className="font-medium text-foreground">{dashboard.title}</span>
-                          {dashboard.isDirty && (
-                            <span className="text-xs text-grafana-orange">*unsaved</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-muted-foreground">{dashboard.folder}</td>
-                      <td className="px-4 py-3 text-muted-foreground">
-                        {dashboard.updatedAt ? 
-                          new Date(dashboard.updatedAt).toLocaleDateString() : 
-                          new Date(dashboard.savedAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-1 flex-wrap">
-                          {dashboard.tags.map(tag => (
-                            <span key={tag} className="px-2 py-0.5 text-xs bg-secondary rounded text-muted-foreground">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {recentDashboards.length === 0 && (
+          {/* Folders Section */}
+          {Object.keys(dashboardsByFolder).map(folderName => (
+            <section key={folderName} className="mb-8">
+              <h2 className="flex items-center gap-2 text-lg font-medium text-foreground mb-4">
+                <Clock size={20} className="text-muted-foreground" />
+                {folderName} ({dashboardsByFolder[folderName].length})
+              </h2>
+              <div className="bg-card border border-border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-secondary">
                     <tr>
-                      <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                        No dashboards yet. Create your first dashboard!
-                      </td>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Last updated</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">Tags</th>
                     </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {dashboardsByFolder[folderName].map((dashboard) => (
+                      <tr
+                        key={dashboard.id || dashboard.uid}
+                        onClick={() => handleOpenDashboard(dashboard)}
+                        className="hover:bg-secondary/50 cursor-pointer transition-colors"
+                      >
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <LayoutDashboard size={18} className="text-muted-foreground" />
+                            <span className="font-medium text-foreground">{dashboard.title}</span>
+                            {dashboard.isDirty && (
+                              <span className="text-xs text-grafana-orange">*unsaved</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-muted-foreground">
+                          {dashboard.updatedAt ? 
+                            new Date(dashboard.updatedAt).toLocaleDateString() : 
+                            new Date(dashboard.savedAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex gap-1 flex-wrap">
+                            {(dashboard.tags || []).map(tag => (
+                              <span key={tag} className="px-2 py-0.5 text-xs bg-secondary rounded text-muted-foreground">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ))}
+          
+          {Object.keys(dashboardsByFolder).length === 0 && (
+            <section>
+              <div className="text-center py-12">
+                <LayoutDashboard size={48} className="mx-auto mb-4 text-muted-foreground opacity-50" />
+                <h3 className="text-lg font-medium text-foreground mb-2">No dashboards yet</h3>
+                <p className="text-muted-foreground mb-4">Create your first dashboard to get started</p>
+                <button onClick={handleNewDashboard} className="grafana-btn grafana-btn-primary">
+                  <Plus size={16} />
+                  Create Dashboard
+                </button>
+              </div>
+            </section>
+          )}
         </main>
       </div>
       <SearchModal />

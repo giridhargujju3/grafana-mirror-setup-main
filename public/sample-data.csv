@@ -1,0 +1,16 @@
+timestamp,server,cpu_usage,memory_usage,disk_usage,network_in,network_out,status,region
+2024-01-01 00:00:00,server-1,45.2,62.1,78.5,1024,512,healthy,us-east-1
+2024-01-01 00:05:00,server-1,48.7,64.3,78.6,1156,623,healthy,us-east-1
+2024-01-01 00:10:00,server-1,52.1,66.8,78.7,1289,734,warning,us-east-1
+2024-01-01 00:15:00,server-1,49.3,65.2,78.8,1178,645,healthy,us-east-1
+2024-01-01 00:20:00,server-1,51.8,67.1,78.9,1234,678,healthy,us-east-1
+2024-01-01 00:00:00,server-2,38.9,55.7,82.1,892,445,healthy,us-west-2
+2024-01-01 00:05:00,server-2,41.2,57.9,82.3,967,512,healthy,us-west-2
+2024-01-01 00:10:00,server-2,44.6,60.1,82.5,1045,578,healthy,us-west-2
+2024-01-01 00:15:00,server-2,42.8,58.8,82.7,998,534,healthy,us-west-2
+2024-01-01 00:20:00,server-2,46.1,61.3,82.9,1089,589,warning,us-west-2
+2024-01-01 00:00:00,server-3,67.4,78.2,85.3,1567,823,warning,eu-west-1
+2024-01-01 00:05:00,server-3,71.8,81.5,85.4,1689,901,critical,eu-west-1
+2024-01-01 00:10:00,server-3,69.2,79.8,85.5,1623,867,warning,eu-west-1
+2024-01-01 00:15:00,server-3,72.5,82.1,85.6,1712,934,critical,eu-west-1
+2024-01-01 00:20:00,server-3,68.9,78.9,85.7,1598,845,warning,eu-west-1

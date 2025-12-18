@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useDashboardRegistry, DashboardEntry } from "@/contexts/DashboardRegistryContext";
 import { DashboardProvider } from "@/contexts/DashboardContext";
 import { DashboardContent } from "@/components/grafana/GrafanaDashboard";
@@ -7,6 +7,7 @@ import { UnsavedChangesModal } from "@/components/grafana/modals/UnsavedChangesM
 
 export default function DashboardEditorPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { dashboardId } = useParams();
   const {
     createNewDashboard,
@@ -20,16 +21,35 @@ export default function DashboardEditorPage() {
 
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const [currentDashboard, setCurrentDashboard] = useState<DashboardEntry | null>(null);
+  const [savedDashboard, setSavedDashboard] = useState<any>(null);
 
   useEffect(() => {
     if (dashboardId) {
-      // Opening an existing dashboard by ID
+      // Check if dashboard data is passed via navigation state
+      if (location.state?.dashboardData) {
+        setSavedDashboard(location.state.dashboardData);
+        setCurrentDashboard(null);
+        return;
+      }
+      
+      // 1. Try to load from localStorage FIRST (Persistence)
+      const savedDashboards = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
+      const foundInStorage = savedDashboards.find((d: any) => d.id === dashboardId || d.uid === dashboardId);
+      
+      if (foundInStorage) {
+        setSavedDashboard(foundInStorage);
+        setCurrentDashboard(null);
+        return;
+      }
+
+      // 2. If not in localStorage, check registry (Session/Drafts)
       const dashboard = getDashboard(dashboardId);
       if (dashboard) {
         openDashboard(dashboardId);
         setCurrentDashboard(dashboard);
+        setSavedDashboard(null);
       } else {
-        // Dashboard not found, redirect to dashboards list
+        // Dashboard not found anywhere, redirect to dashboards list
         navigate("/dashboards");
       }
     } else {
@@ -80,33 +100,38 @@ export default function DashboardEditorPage() {
     }
   };
 
-  if (!currentDashboard) {
+  if (!currentDashboard && !savedDashboard) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="text-muted-foreground">Loading dashboard...</div>
       </div>
     );
   }
+  
+  // Use saved dashboard data if available, otherwise use registry dashboard
+  const dashboardData = savedDashboard || currentDashboard;
 
   return (
     <DashboardProvider
-      key={currentDashboard.id}
-      initialTitle={currentDashboard.title}
-      initialFolder={currentDashboard.folder}
-      initialTags={currentDashboard.tags}
-      initialPanels={currentDashboard.panels}
-      isNewDashboard={currentDashboard.isNew}
-      dashboardId={currentDashboard.id}
+      key={dashboardData.id}
+      initialTitle={dashboardData.title}
+      initialFolder={dashboardData.folder}
+      initialTags={dashboardData.tags || []}
+      initialPanels={dashboardData.panels || []}
+      isNewDashboard={dashboardData.isNew || false}
+      dashboardId={dashboardData.id}
     >
       <DashboardContent />
-      <UnsavedChangesModal
-        open={showUnsavedModal}
-        onClose={() => setShowUnsavedModal(false)}
-        onDiscard={handleDiscard}
-        onSave={handleSave}
-        dashboardTitle={currentDashboard.title}
-        isNew={currentDashboard.isNew}
-      />
+      {currentDashboard && (
+        <UnsavedChangesModal
+          open={showUnsavedModal}
+          onClose={() => setShowUnsavedModal(false)}
+          onDiscard={handleDiscard}
+          onSave={handleSave}
+          dashboardTitle={currentDashboard.title}
+          isNew={currentDashboard.isNew}
+        />
+      )}
     </DashboardProvider>
   );
 }

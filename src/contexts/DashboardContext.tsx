@@ -8,14 +8,66 @@ export interface PanelConfig {
   options: Record<string, any>;
   targets?: QueryTarget[];
   description?: string;
+  datasource?: DataSource;
+  fieldConfig?: {
+    defaults?: FieldConfig;
+    overrides?: FieldOverride[];
+  };
+}
+
+export interface FieldConfig {
+  displayName?: string;
+  unit?: string;
+  decimals?: number;
+  min?: number;
+  max?: number;
+  color?: FieldColor;
+  custom?: Record<string, any>;
+  thresholds?: {
+    mode: 'absolute' | 'percentage';
+    steps: Array<{
+      color: string;
+      value: number | null;
+    }>;
+  };
+}
+
+export interface FieldOverride {
+  matcher: {
+    id: string;
+    options?: any;
+  };
+  properties: Array<{
+    id: string;
+    value: any;
+  }>;
+}
+
+export interface FieldColor {
+  mode: 'palette-classic' | 'continuous-GrYlRd' | 'fixed' | 'thresholds';
+  fixedColor?: string;
 }
 
 export interface QueryTarget {
   refId: string;
-  expr: string;
-  datasource: string;
+  expr?: string;
+  datasource: string | DataSource;
   queryMode?: "builder" | "code";
   legendFormat?: string;
+  // CSV-specific fields
+  scenarioId?: 'csv_content' | 'csv_file' | 'csv_url';
+  csvContent?: string;
+  csvFileName?: string;
+  csvUrl?: string;
+  alias?: string;
+  dropPercent?: number;
+  labels?: string;
+  // Generic query fields
+  query?: string;
+  rawSql?: string;
+  format?: 'time_series' | 'table';
+  intervalMs?: number;
+  maxDataPoints?: number;
 }
 
 export interface VariableOption {
@@ -41,8 +93,15 @@ export interface DashboardVariable {
 export interface DataSource {
   id: string;
   name: string;
-  type: "prometheus" | "loki" | "postgres" | "mysql" | "influxdb" | "elasticsearch" | "graphite" | "testdata";
+  type: "prometheus" | "loki" | "postgres" | "mysql" | "influxdb" | "elasticsearch" | "graphite" | "testdata" | "csv";
   isDefault?: boolean;
+  url?: string;
+  csvConfig?: {
+    url?: string;
+    filePath?: string;
+    delimiter?: string;
+    hasHeader?: boolean;
+  };
 }
 
 export interface Dashboard {
@@ -93,6 +152,10 @@ interface DashboardContextType {
   setShowDataSourceSelector: (show: boolean) => void;
   showSaveDashboardModal: boolean;
   setShowSaveDashboardModal: (show: boolean) => void;
+  showCSVImportModal: boolean;
+  setShowCSVImportModal: (show: boolean) => void;
+  showJSONModal: boolean;
+  setShowJSONModal: (show: boolean) => void;
   
   // Panel editing
   editingPanel: PanelConfig | null;
@@ -130,7 +193,7 @@ interface DashboardContextType {
   dashboardState: DashboardState;
   setDashboardState: (state: DashboardState) => void;
   markDirty: () => void;
-  saveDashboard: () => void;
+  saveDashboard: (options?: { title?: string; folder?: string; tags?: string[] }) => void;
   discardChanges: () => void;
   
   // Data sources
@@ -163,6 +226,7 @@ const defaultDataSources: DataSource[] = [
   { id: "mysql", name: "MySQL", type: "mysql" },
   { id: "influxdb", name: "InfluxDB", type: "influxdb" },
   { id: "elasticsearch", name: "Elasticsearch", type: "elasticsearch" },
+  { id: "csv", name: "CSV Data Source", type: "csv" },
   { id: "testdata", name: "TestData", type: "testdata" },
 ];
 
@@ -287,6 +351,8 @@ export function DashboardProvider({
   const [showPanelEditor, setShowPanelEditor] = useState(false);
   const [showDataSourceSelector, setShowDataSourceSelector] = useState(false);
   const [showSaveDashboardModal, setShowSaveDashboardModal] = useState(false);
+  const [showCSVImportModal, setShowCSVImportModal] = useState(false);
+  const [showJSONModal, setShowJSONModal] = useState(false);
   const [editingPanel, setEditingPanel] = useState<PanelConfig | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [dashboardTitle, setDashboardTitle] = useState(initialTitle);
@@ -443,21 +509,35 @@ export function DashboardProvider({
     markDirty();
   }, [markDirty]);
 
-  const saveDashboard = useCallback(() => {
+  const saveDashboard = useCallback((options?: { title?: string; folder?: string; tags?: string[] }) => {
+    // Generate unique ID if new dashboard
+    const newDashboardId = dashboardState.isNew ? `dashboard-${Date.now()}` : (dashboardId || `dashboard-${Date.now()}`);
+    
+    const titleToSave = options?.title || dashboardTitle;
+    const folderToSave = options?.folder || dashboardFolder;
+    const tagsToSave = options?.tags || dashboardTags;
+
     // Save to localStorage for persistence
     const dashboardData = {
-      title: dashboardTitle,
+      id: newDashboardId,
+      uid: newDashboardId,
+      title: titleToSave,
       panels,
-      tags: dashboardTags,
-      folder: dashboardFolder,
-      savedAt: new Date().toISOString()
+      tags: tagsToSave,
+      folder: folderToSave,
+      savedAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      time: { from: timeRange, to: 'now' },
+      refresh: refreshInterval,
+      starred: isStarred,
+      version: 1
     };
     
     const savedDashboards = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
-    const existingIndex = savedDashboards.findIndex((d: any) => d.title === dashboardTitle);
+    const existingIndex = savedDashboards.findIndex((d: any) => d.id === newDashboardId || d.title === titleToSave);
     
     if (existingIndex >= 0) {
-      savedDashboards[existingIndex] = dashboardData;
+      savedDashboards[existingIndex] = { ...savedDashboards[existingIndex], ...dashboardData };
     } else {
       savedDashboards.push(dashboardData);
     }
@@ -471,7 +551,12 @@ export function DashboardProvider({
       originalPanels: [...panels],
       lastSaved: new Date(),
     }));
-  }, [panels, dashboardTitle, dashboardTags, dashboardFolder]);
+    
+    // Store dashboard ID for future reference
+    if (dashboardState.isNew) {
+      window.history.replaceState(null, '', `/dashboard/${newDashboardId}`);
+    }
+  }, [panels, dashboardTitle, dashboardTags, dashboardFolder, timeRange, refreshInterval, isStarred, dashboardState.isNew, dashboardId]);
 
   const discardChanges = useCallback(() => {
     setPanels(dashboardState.originalPanels);
@@ -503,6 +588,10 @@ export function DashboardProvider({
         setShowDataSourceSelector,
         showSaveDashboardModal,
         setShowSaveDashboardModal,
+        showCSVImportModal,
+        setShowCSVImportModal,
+        showJSONModal,
+        setShowJSONModal,
         editingPanel,
         setEditingPanel,
         sidebarCollapsed,

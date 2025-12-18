@@ -16,6 +16,7 @@ import {
   Save,
   X,
   AlertCircle,
+  FileText,
 } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,8 @@ export function GrafanaHeader() {
     setShowSettingsModal,
     setShowSaveDashboardModal,
     setShowDataSourceSelector,
+    setShowCSVImportModal,
+    setShowJSONModal,
     isEditMode,
     setIsEditMode,
     panels,
@@ -140,14 +143,7 @@ export function GrafanaHeader() {
   };
 
   const handleViewJSON = () => {
-    const dashboardJson = JSON.stringify({
-      title: dashboardTitle,
-      panels,
-      time: { from: timeRange },
-      refresh: refreshInterval,
-    }, null, 2);
-    console.log(dashboardJson);
-    toast.info("Dashboard JSON logged to console");
+    setShowJSONModal(true);
     setShowMoreDropdown(false);
   };
 
@@ -283,13 +279,23 @@ export function GrafanaHeader() {
 
           {/* Add panel button */}
           {isEditMode && (
-            <button 
-              onClick={handleAddPanel}
-              className="grafana-btn grafana-btn-secondary"
-            >
-              <Plus size={16} />
-              <span className="hidden sm:inline">Add</span>
-            </button>
+            <>
+              <button 
+                onClick={handleAddPanel}
+                className="grafana-btn grafana-btn-secondary"
+              >
+                <Plus size={16} />
+                <span className="hidden sm:inline">Add</span>
+              </button>
+              <button 
+                onClick={() => setShowCSVImportModal(true)}
+                className="grafana-btn grafana-btn-secondary"
+                title="Import CSV data"
+              >
+                <FileText size={16} />
+                <span className="hidden sm:inline">CSV</span>
+              </button>
+            </>
           )}
 
           {/* Time range picker */}
@@ -397,6 +403,15 @@ export function GrafanaHeader() {
             <Share2 size={18} />
           </button>
 
+          {/* JSON Editor button */}
+          <button 
+            onClick={() => setShowJSONModal(true)}
+            className="p-2 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+            title="Edit dashboard JSON"
+          >
+            <FileText size={18} />
+          </button>
+
           {/* Settings button */}
           <button 
             onClick={handleSettings}
@@ -427,7 +442,7 @@ export function GrafanaHeader() {
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-secondary transition-colors"
                 >
                   <Eye size={16} />
-                  View JSON
+                  Edit JSON
                 </button>
                 <button
                   onClick={handleExport}

@@ -44,10 +44,17 @@ export function SaveDashboardModal() {
     setDashboardTitle(title);
     setDashboardFolder(folder);
     setDashboardTags(tagsInput.split(",").map(t => t.trim()).filter(Boolean));
-    saveDashboard();
+    saveDashboard({
+      title,
+      folder,
+      tags: tagsInput.split(",").map(t => t.trim()).filter(Boolean)
+    });
     
     toast.success(`Dashboard "${title}" saved successfully`);
     setShowSaveDashboardModal(false);
+    
+    // Trigger a storage event to refresh other components
+    window.dispatchEvent(new Event('storage'));
   };
 
   const handleSaveAs = () => {
@@ -60,7 +67,11 @@ export function SaveDashboardModal() {
     setDashboardTitle(title + " (copy)");
     setDashboardFolder(folder);
     setDashboardTags(tagsInput.split(",").map(t => t.trim()).filter(Boolean));
-    saveDashboard();
+    saveDashboard({
+      title: title + " (copy)",
+      folder,
+      tags: tagsInput.split(",").map(t => t.trim()).filter(Boolean)
+    });
     
     toast.success(`Dashboard saved as "${title} (copy)"`);
     setShowSaveDashboardModal(false);

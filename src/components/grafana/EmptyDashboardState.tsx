@@ -1,11 +1,8 @@
 import { Plus, Upload, Library, Database } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { CSVImportModal } from "./CSVImportModal";
-import { useState } from "react";
 
 export function EmptyDashboardState() {
-  const { setShowDataSourceSelector } = useDashboard();
-  const [showCSVImport, setShowCSVImport] = useState(false);
+  const { setShowDataSourceSelector, setShowCSVImportModal } = useDashboard();
 
   const handleAddVisualization = () => {
     // Show data source selector first, which will then open panel editor
@@ -41,7 +38,7 @@ export function EmptyDashboardState() {
               Upload CSV files or paste data to create visualizations.
             </p>
             <button 
-              onClick={() => setShowCSVImport(true)}
+              onClick={() => setShowCSVImportModal(true)}
               className="inline-flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded-md text-sm font-medium hover:bg-primary/10 transition-colors"
             >
               <Database size={16} />
@@ -74,10 +71,7 @@ export function EmptyDashboardState() {
         </div>
       </div>
       
-      <CSVImportModal 
-        isOpen={showCSVImport} 
-        onClose={() => setShowCSVImport(false)} 
-      />
+
     </div>
   );
 }

@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useDashboardRegistry, DashboardFolder } from "@/contexts/DashboardRegistryContext";
 import { FolderModal } from "./modals/FolderModal";
 import { MoveDashboardModal } from "./modals/MoveDashboardModal";
+import { toast } from "sonner";
 import {
   Home,
   LayoutDashboard,
@@ -56,15 +57,40 @@ interface SidebarItem {
 
 export function GrafanaSidebar() {
   const { sidebarCollapsed, setSidebarCollapsed, setShowSearchModal } = useDashboard();
-  const { createNewDashboard, folders, dashboards, getDashboardsInFolder, deleteFolder } = useDashboardRegistry();
+  const { createNewDashboard, folders, dashboards, getDashboardsInFolder, deleteFolder, deleteDashboard } = useDashboardRegistry();
   const [expandedItems, setExpandedItems] = useState<string[]>(["Dashboards"]);
   const [expandedFolders, setExpandedFolders] = useState<string[]>([]);
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState<DashboardFolder | null>(null);
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [movingDashboard, setMovingDashboard] = useState<any>(null);
+  const [savedDashboards, setSavedDashboards] = useState<any[]>([]);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Load saved dashboards from localStorage
+  useEffect(() => {
+    const loadSavedDashboards = () => {
+      try {
+        const saved = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
+        setSavedDashboards(saved);
+      } catch {
+        setSavedDashboards([]);
+      }
+    };
+    
+    loadSavedDashboards();
+    
+    const handleStorageChange = () => {
+      loadSavedDashboards();
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+    };
+  }, []);
 
   const handleNewDashboard = () => {
     const newId = createNewDashboard();
@@ -85,6 +111,26 @@ export function GrafanaSidebar() {
     deleteFolder(folderId);
   };
 
+  const handleDeleteDashboard = (dashboard: any) => {
+    // 1. Delete from registry (in-memory)
+    deleteDashboard(dashboard.id);
+    
+    // 2. Delete from localStorage
+    const saved = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
+    const filtered = saved.filter((d: any) => d.id !== dashboard.id);
+    localStorage.setItem('grafana-dashboards', JSON.stringify(filtered));
+    
+    // 3. Trigger update
+    window.dispatchEvent(new Event('storage'));
+    
+    toast.success(`Dashboard "${dashboard.title}" deleted`);
+    
+    // 4. Navigate away if current dashboard is deleted
+    if (location.pathname === `/dashboard/${dashboard.id}`) {
+      navigate('/dashboards');
+    }
+  };
+
   const handleMoveDashboard = (dashboard: any) => {
     setMovingDashboard(dashboard);
     setShowMoveModal(true);
@@ -99,6 +145,20 @@ export function GrafanaSidebar() {
   };
 
   const generalDashboards = getDashboardsInFolder(null);
+  
+  // Memoize expensive calculations
+  const { savedDashboardsByFolder, allFolderNames } = useMemo(() => {
+    const byFolder = savedDashboards.reduce((acc, dashboard) => {
+      const folder = dashboard.folder || 'General';
+      if (!acc[folder]) acc[folder] = [];
+      acc[folder].push(dashboard);
+      return acc;
+    }, {} as Record<string, any[]>);
+    
+    const folderNames = [...new Set([...Object.keys(byFolder), 'General'])];
+    
+    return { savedDashboardsByFolder: byFolder, allFolderNames: folderNames };
+  }, [savedDashboards]);
 
   const menuItems: SidebarItem[] = [
     { icon: Home, label: "Home", href: "/" },
@@ -314,53 +374,72 @@ export function GrafanaSidebar() {
                         <span className="text-xs text-muted-foreground px-3">FOLDERS</span>
                       </li>
                       
-                      {/* General folder (root) */}
-                      <li>
-                        <div className="flex items-center group">
-                          <button
-                            onClick={() => toggleFolder("general")}
-                            className="flex-1 flex items-center gap-2 px-3 py-1.5 text-sm rounded-l transition-colors text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50"
-                          >
-                            <Folder size={14} />
-                            <span>General</span>
-                            <ChevronRight
-                              size={12}
-                              className={cn(
-                                "ml-auto transition-transform",
-                                expandedFolders.includes("general") && "rotate-90"
-                              )}
-                            />
-                          </button>
-                        </div>
-                        {expandedFolders.includes("general") && generalDashboards.length > 0 && (
-                          <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-2">
-                            {generalDashboards.map((dash) => (
-                              <li key={dash.id} className="flex items-center group">
-                                <button
-                                  onClick={() => navigate(`/dashboard/${dash.id}`)}
-                                  className="flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded-l transition-colors text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50 truncate"
-                                >
-                                  <LayoutDashboard size={12} />
-                                  <span className="truncate">{dash.title}</span>
-                                </button>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <button className="p-1 opacity-0 group-hover:opacity-100 hover:bg-sidebar-accent rounded transition-all">
-                                      <MoreVertical size={12} />
+                      {/* All folders including saved dashboards */}
+                      {allFolderNames.map(folderName => {
+                        const registryDashboards = folderName === 'General' ? generalDashboards : [];
+                        const savedFolderDashboards = savedDashboardsByFolder[folderName] || [];
+                        
+                        // Deduplicate: prefer saved dashboards over registry ones
+                        const savedIds = new Set(savedFolderDashboards.map(d => d.id));
+                        const uniqueRegistry = registryDashboards.filter(d => !savedIds.has(d.id));
+                        const allDashboardsInFolder = [...uniqueRegistry, ...savedFolderDashboards];
+                        
+                        if (allDashboardsInFolder.length === 0) return null;
+                        
+                        return (
+                          <li key={folderName}>
+                            <div className="flex items-center group">
+                              <button
+                                onClick={() => toggleFolder(folderName.toLowerCase())}
+                                className="flex-1 flex items-center gap-2 px-3 py-1.5 text-sm rounded-l transition-colors text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+                              >
+                                <Folder size={14} />
+                                <span>{folderName}</span>
+                                <span className="text-xs text-muted-foreground ml-1">({allDashboardsInFolder.length})</span>
+                                <ChevronRight
+                                  size={12}
+                                  className={cn(
+                                    "ml-auto transition-transform",
+                                    expandedFolders.includes(folderName.toLowerCase()) && "rotate-90"
+                                  )}
+                                />
+                              </button>
+                            </div>
+                            {expandedFolders.includes(folderName.toLowerCase()) && (
+                              <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-2">
+                                {allDashboardsInFolder.map((dash) => (
+                                  <li key={dash.id} className="flex items-center group">
+                                    <button
+                                      onClick={() => navigate(`/dashboard/${dash.id}`)}
+                                      className="flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded-l transition-colors text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50 truncate"
+                                    >
+                                      <LayoutDashboard size={12} />
+                                      <span className="truncate">{dash.title}</span>
                                     </button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent className="bg-popover border-border z-50" align="end">
-                                    <DropdownMenuItem onClick={() => handleMoveDashboard(dash)}>
-                                      <ArrowRight size={14} className="mr-2" />
-                                      Move to folder
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </li>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <button className="p-1 opacity-0 group-hover:opacity-100 hover:bg-sidebar-accent rounded transition-all">
+                                          <MoreVertical size={12} />
+                                        </button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent className="bg-popover border-border z-50" align="end">
+                                        <DropdownMenuItem onClick={() => handleMoveDashboard(dash)}>
+                                          <ArrowRight size={14} className="mr-2" />
+                                          Move to folder
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteDashboard(dash)} className="text-destructive focus:text-destructive">
+                                          <Trash2 size={14} className="mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </li>
+                        );
+                      })}
 
                       {/* Custom folders */}
                       {folders.map((folder) => {
@@ -425,6 +504,10 @@ export function GrafanaSidebar() {
                                         <DropdownMenuItem onClick={() => handleMoveDashboard(dash)}>
                                           <ArrowRight size={14} className="mr-2" />
                                           Move to folder
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => handleDeleteDashboard(dash)} className="text-destructive focus:text-destructive">
+                                          <Trash2 size={14} className="mr-2" />
+                                          Delete
                                         </DropdownMenuItem>
                                       </DropdownMenuContent>
                                     </DropdownMenu>

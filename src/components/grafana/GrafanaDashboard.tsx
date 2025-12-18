@@ -11,6 +11,8 @@ import { PanelEditorModal } from "./modals/PanelEditorModal";
 import { DataSourceSelector } from "./modals/DataSourceSelector";
 import { SaveDashboardModal } from "./modals/SaveDashboardModal";
 import { VariablesModal } from "./modals/VariablesModal";
+import { CSVImportModal } from "./CSVImportModal";
+import { JSONEditorModal } from "./modals/JSONEditorModal";
 import { TimeSeriesPanel } from "./panels/TimeSeriesPanel";
 import { StatPanel } from "./panels/StatPanel";
 import { GaugePanel } from "./panels/GaugePanel";
@@ -75,7 +77,7 @@ const generateLogs = (dataRefreshKey: number) => [
 ];
 
 function DashboardContent() {
-  const { isRefreshing, panels, dataRefreshKey, isEditMode, reorderPanels } = useDashboard();
+  const { isRefreshing, panels, dataRefreshKey, isEditMode, reorderPanels, showCSVImportModal, setShowCSVImportModal, showJSONModal, setShowJSONModal } = useDashboard();
 
   const handleDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) return;
@@ -303,6 +305,14 @@ function DashboardContent() {
       <DataSourceSelector />
       <SaveDashboardModal />
       <VariablesModal />
+      <CSVImportModal 
+        isOpen={showCSVImportModal} 
+        onClose={() => setShowCSVImportModal(false)} 
+      />
+      <JSONEditorModal 
+        isOpen={showJSONModal} 
+        onClose={() => setShowJSONModal(false)} 
+      />
     </div>
   );
 }
