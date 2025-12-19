@@ -15,16 +15,22 @@ export class PostgreSQLService {
   }
 
   async executeQuery(datasourceId: string, query: Query): Promise<DataFrame> {
+    console.log('PostgreSQL service - executeQuery called with:', { datasourceId, query });
+    console.log('Available connections:', Array.from(this.connections.keys()));
+    
     const connection = this.connections.get(datasourceId);
     if (!connection) {
-      throw new Error(`Data source ${datasourceId} not found`);
+      throw new Error(`Data source ${datasourceId} not found. Available: ${Array.from(this.connections.keys()).join(', ')}`);
     }
 
     if (!query.rawSql) {
       throw new Error('SQL query is required');
     }
 
+    console.log('Executing SQL:', query.rawSql);
     const result = await connection.query(query.rawSql);
+    console.log('SQL result:', result);
+    
     return this.transformToDataFrame(result, query);
   }
 
@@ -79,4 +85,10 @@ export class PostgreSQLService {
       this.connections.delete(datasourceId);
     }
   }
+
+  getConnectionIds(): string[] {
+    return Array.from(this.connections.keys());
+  }
 }
+
+export const postgresService = new PostgreSQLService();

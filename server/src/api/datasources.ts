@@ -1,9 +1,8 @@
 import { Router, Request, Response } from 'express';
-import { PostgreSQLService } from '../services/postgresService';
+import { postgresService } from '../services/postgresService';
 import { DataSourceConfig } from '../types/datasource';
 
 const router = Router();
-const postgresService = new PostgreSQLService();
 
 // Store data sources in memory (in production, use database)
 const dataSources: Map<string, DataSourceConfig> = new Map();
@@ -37,10 +36,13 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Save data source
     dataSources.set(config.id, config);
+    
+    // Add to PostgreSQL service for query execution
     await postgresService.addDataSource(config);
     
     console.log('Data source saved:', config);
     console.log('Total data sources now:', dataSources.size);
+    console.log('PostgreSQL service connections:', Array.from(postgresService.getConnectionIds()));
 
     res.status(201).json(config);
   } catch (error) {
@@ -124,6 +126,15 @@ router.delete('/:id', async (req: Request, res: Response) => {
       message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
+});
+
+// GET /api/datasources/debug - Debug endpoint
+router.get('/debug', (req: Request, res: Response) => {
+  res.json({
+    totalDataSources: dataSources.size,
+    dataSourceIds: Array.from(dataSources.keys()),
+    postgresConnections: postgresService.getConnectionIds()
+  });
 });
 
 export default router;

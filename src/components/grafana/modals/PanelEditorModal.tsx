@@ -88,6 +88,7 @@ export function PanelEditorModal() {
   const [queryMode, setQueryMode] = useState<"builder" | "code">("code");
   const [showOptions, setShowOptions] = useState(true);
   const [isRunning, setIsRunning] = useState(false);
+  const [queryResult, setQueryResult] = useState<any>(null);
 
   const previewData = useMemo(() => generatePreviewData(vizType), [vizType, isRunning]);
   const pieData = useMemo(() => generatePieData(), []);
@@ -115,6 +116,9 @@ export function PanelEditorModal() {
       return;
     }
 
+    console.log('Executing query with datasource:', currentQuery.datasource);
+    console.log('Query:', currentQuery.expr);
+
     setIsRunning(true);
     try {
       const response = await fetch('http://localhost:3001/api/query/test', {
@@ -126,15 +130,29 @@ export function PanelEditorModal() {
         })
       });
 
+      console.log('Response status:', response.status);
       const result = await response.json();
+      console.log('Response data:', result);
+      
+      if (!response.ok) {
+        console.error('Query failed:', result);
+        if (result.error?.includes('No data sources configured')) {
+          toast.error('No PostgreSQL data sources configured. Please add a data source first in the sidebar.');
+        } else {
+          toast.error(`Query failed: ${result.error || 'Unknown error'}`);
+        }
+        return;
+      }
       
       if (result.success) {
         toast.success(`Query executed: ${result.data.rowCount} rows returned`);
-        // You can store the result for visualization if needed
+        // Store the result for visualization
+        setQueryResult(result.data);
       } else {
         toast.error(`Query failed: ${result.error}`);
       }
     } catch (error) {
+      console.error('Query execution error:', error);
       toast.error(`Query execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsRunning(false);
@@ -144,6 +162,7 @@ export function PanelEditorModal() {
   const handleRunAllQueries = async () => {
     setIsRunning(true);
     let successCount = 0;
+    let hasDataSourceError = false;
     
     for (const query of queries) {
       if (query.expr?.trim()) {
@@ -158,8 +177,11 @@ export function PanelEditorModal() {
           });
           
           const result = await response.json();
-          if (result.success) {
+          if (response.ok && result.success) {
             successCount++;
+          } else if (result.error?.includes('No data sources configured')) {
+            hasDataSourceError = true;
+            break;
           }
         } catch (error) {
           console.error(`Query ${query.refId} failed:`, error);
@@ -168,7 +190,12 @@ export function PanelEditorModal() {
     }
     
     setIsRunning(false);
-    toast.success(`${successCount}/${queries.length} queries executed successfully`);
+    
+    if (hasDataSourceError) {
+      toast.error('No PostgreSQL data sources configured. Please add a data source first in the sidebar.');
+    } else {
+      toast.success(`${successCount}/${queries.length} queries executed successfully`);
+    }
   };
 
   const handleAddQuery = () => {
@@ -238,8 +265,14 @@ export function PanelEditorModal() {
     handleApply();
   };
 
-  const getQueryHints = (datasource: string) => {
-    switch (datasource) {
+  const getDataSourceType = (datasourceId: string) => {
+    const ds = dataSources.find(d => d.id === datasourceId);
+    return ds ? ds.type : datasourceId;
+  };
+
+  const getQueryHints = (datasourceId: string) => {
+    const type = getDataSourceType(datasourceId);
+    switch (type) {
       case "prometheus":
         return [
           "up",
@@ -380,6 +413,41 @@ export function PanelEditorModal() {
                 <text x="50" y="55" textAnchor="middle" className="text-2xl font-bold fill-foreground">72%</text>
               </svg>
             </div>
+          </div>
+        );
+      case "table":
+        if (queryResult && queryResult.columns && queryResult.rows) {
+          return (
+            <div className="w-full h-full overflow-auto p-4">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    {queryResult.columns.map((col: string, i: number) => (
+                      <th key={i} className="text-left p-2 font-medium">{col}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {queryResult.rows.slice(0, 100).map((row: any[], i: number) => (
+                    <tr key={i} className="border-b border-border/50 hover:bg-secondary/20">
+                      {row.map((cell, j) => (
+                        <td key={j} className="p-2">{cell}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {queryResult.rows.length > 100 && (
+                <div className="text-xs text-muted-foreground mt-2">
+                  Showing first 100 of {queryResult.rowCount} rows
+                </div>
+              )}
+            </div>
+          );
+        }
+        return (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <p>Execute a query to see table data</p>
           </div>
         );
       default:
@@ -550,7 +618,10 @@ export function PanelEditorModal() {
                             className="flex items-center gap-2 px-3 py-1.5 bg-secondary border border-border rounded hover:border-primary transition-colors text-sm"
                           >
                             <Database size={14} />
-                            <span>{dataSources.find(ds => ds.id === queries[activeQueryIndex].datasource)?.name || "Select data source"}</span>
+                            <span>
+                              {dataSources.find(ds => ds.id === queries[activeQueryIndex].datasource)?.name || 
+                               (typeof queries[activeQueryIndex].datasource === 'string' ? queries[activeQueryIndex].datasource : "Select data source")}
+                            </span>
                             <ChevronDown size={14} />
                           </button>
                         </div>
@@ -612,9 +683,9 @@ export function PanelEditorModal() {
                       <div className="p-4 space-y-3">
                         {queries[activeQueryIndex].queryMode === "builder" ? (
                           // Check if it's a SQL data source
-                          ["postgres", "mysql"].includes(queries[activeQueryIndex].datasource) ? (
+                          ["postgres", "mysql"].includes(getDataSourceType(queries[activeQueryIndex].datasource)) ? (
                             <SQLQueryBuilder
-                              datasource={queries[activeQueryIndex].datasource}
+                              datasource={getDataSourceType(queries[activeQueryIndex].datasource)}
                               value={queries[activeQueryIndex].expr}
                               onChange={(query) => handleUpdateQuery(activeQueryIndex, "expr", query)}
                             />

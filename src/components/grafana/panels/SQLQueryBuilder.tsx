@@ -117,25 +117,25 @@ export function SQLQueryBuilder({ datasource, value, onChange }: SQLQueryBuilder
 
     let query = "SELECT ";
     query += selectedColumns.length > 0 ? selectedColumns.join(", ") : "*";
-    query += `\nFROM ${selectedTable}`;
+    query += ` \nFROM ${selectedTable}`;
 
     if (whereConditions.length > 0) {
       const validConditions = whereConditions.filter((c) => c.column && c.value);
       if (validConditions.length > 0) {
-        query += "\nWHERE " + validConditions.map((c) => `${c.column} ${c.operator} '${c.value}'`).join(" AND ");
+        query += " \nWHERE " + validConditions.map((c) => `${c.column} ${c.operator} '${c.value}'`).join(" AND ");
       }
     }
 
     if (groupBy) {
-      query += `\nGROUP BY ${groupBy}`;
+      query += ` \nGROUP BY ${groupBy}`;
     }
 
     if (orderBy) {
-      query += `\nORDER BY ${orderBy} ${orderDirection}`;
+      query += ` \nORDER BY ${orderBy} ${orderDirection}`;
     }
 
     if (limit) {
-      query += `\nLIMIT ${limit}`;
+      query += ` \nLIMIT ${limit}`;
     }
 
     onChange(query);

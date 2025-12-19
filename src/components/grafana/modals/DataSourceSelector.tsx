@@ -3,6 +3,7 @@ import { X, Search, Database, Cloud, Server, Table2, Zap, Check, Layers, LayoutD
 import { useDashboard, DataSource, PanelConfig } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
 import { PostgreSQLDataSource } from "@/lib/postgresDataSource";
+import { toast } from "sonner";
 
 const dataSourceIcons: Record<string, React.ReactNode> = {
   prometheus: <Cloud size={24} className="text-grafana-orange" />,
