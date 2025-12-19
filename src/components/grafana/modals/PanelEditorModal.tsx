@@ -108,20 +108,67 @@ export function PanelEditorModal() {
 
   if (!showPanelEditor) return null;
 
-  const handleRunQuery = () => {
+  const handleRunQuery = async () => {
+    const currentQuery = queries[activeQueryIndex];
+    if (!currentQuery?.expr?.trim()) {
+      toast.error("Please enter a query");
+      return;
+    }
+
     setIsRunning(true);
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:3001/api/query/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          datasource: currentQuery.datasource,
+          query: currentQuery.expr
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        toast.success(`Query executed: ${result.data.rowCount} rows returned`);
+        // You can store the result for visualization if needed
+      } else {
+        toast.error(`Query failed: ${result.error}`);
+      }
+    } catch (error) {
+      toast.error(`Query execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
       setIsRunning(false);
-      toast.success("Query executed successfully");
-    }, 500);
+    }
   };
 
-  const handleRunAllQueries = () => {
+  const handleRunAllQueries = async () => {
     setIsRunning(true);
-    setTimeout(() => {
-      setIsRunning(false);
-      toast.success(`${queries.length} queries executed`);
-    }, 800);
+    let successCount = 0;
+    
+    for (const query of queries) {
+      if (query.expr?.trim()) {
+        try {
+          const response = await fetch('http://localhost:3001/api/query/test', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              datasource: query.datasource,
+              query: query.expr
+            })
+          });
+          
+          const result = await response.json();
+          if (result.success) {
+            successCount++;
+          }
+        } catch (error) {
+          console.error(`Query ${query.refId} failed:`, error);
+        }
+      }
+    }
+    
+    setIsRunning(false);
+    toast.success(`${successCount}/${queries.length} queries executed successfully`);
   };
 
   const handleAddQuery = () => {

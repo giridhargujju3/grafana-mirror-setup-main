@@ -1,16 +1,20 @@
 import { GrafanaSidebar } from "@/components/grafana/GrafanaSidebar";
 import { SearchModal } from "@/components/grafana/modals/SearchModal";
+import { PostgreSQLConfigModal } from "@/components/grafana/modals/PostgreSQLConfigModal";
 import { DashboardProvider } from "@/contexts/DashboardContext";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Database, Plus, Search, CheckCircle, Settings, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { PostgreSQLDataSource, PostgreSQLConfig } from "@/lib/postgresDataSource";
 
-const dataSources = [
-  { name: "Prometheus", type: "prometheus", url: "http://prometheus:9090", status: "connected", default: true },
-  { name: "Loki", type: "loki", url: "http://loki:3100", status: "connected", default: false },
-  { name: "InfluxDB", type: "influxdb", url: "http://influxdb:8086", status: "connected", default: false },
-  { name: "PostgreSQL", type: "postgres", url: "postgres://localhost:5432", status: "error", default: false },
-];
+interface DataSource {
+  id: string;
+  name: string;
+  type: string;
+  url: string;
+  status: 'connected' | 'error' | 'unknown';
+  default: boolean;
+}
 
 const availableDataSources = [
   { name: "Prometheus", description: "Open source monitoring and alerting toolkit" },
@@ -26,6 +30,38 @@ const availableDataSources = [
 function ConnectionsContent() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showPostgreSQLModal, setShowPostgreSQLModal] = useState(false);
+  const [dataSources, setDataSources] = useState<DataSource[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDataSources();
+  }, []);
+
+  const loadDataSources = async () => {
+    try {
+      const sources = await PostgreSQLDataSource.listDataSources();
+      const mappedSources: DataSource[] = sources.map(source => ({
+        id: source.id,
+        name: source.name,
+        type: source.type,
+        url: source.url,
+        status: 'connected' as const,
+        default: source.isDefault || false
+      }));
+      setDataSources(mappedSources);
+    } catch (error) {
+      console.error('Failed to load data sources:', error);
+      toast.error('Failed to load data sources');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePostgreSQLSave = async (config: PostgreSQLConfig) => {
+    await loadDataSources();
+    setShowPostgreSQLModal(false);
+  };
 
   const filteredSources = dataSources.filter(source =>
     source.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -60,8 +96,13 @@ function ConnectionsContent() {
           </div>
 
           {/* Data Sources List */}
-          <div className="space-y-3">
-            {filteredSources.map((source) => (
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="text-muted-foreground">Loading data sources...</div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredSources.map((source) => (
               <div
                 key={source.name}
                 className="bg-card border border-border rounded-lg p-4 hover:border-primary/50 transition-colors"
@@ -87,6 +128,14 @@ function ConnectionsContent() {
                       <CheckCircle size={16} />
                       <span className="text-sm capitalize">{source.status}</span>
                     </div>
+                    {source.status === "connected" && (
+                      <button
+                        onClick={() => window.location.href = '/dashboards/new'}
+                        className="grafana-btn grafana-btn-primary text-sm"
+                      >
+                        Build a dashboard
+                      </button>
+                    )}
                     <button
                       onClick={() => toast.info(`Configuring ${source.name}...`)}
                       className="p-2 rounded hover:bg-secondary text-muted-foreground transition-colors"
@@ -102,8 +151,9 @@ function ConnectionsContent() {
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </main>
       </div>
 
@@ -122,8 +172,13 @@ function ConnectionsContent() {
                   <button
                     key={source.name}
                     onClick={() => {
-                      toast.success(`${source.name} data source added`);
-                      setShowAddModal(false);
+                      if (source.name === 'PostgreSQL') {
+                        setShowPostgreSQLModal(true);
+                        setShowAddModal(false);
+                      } else {
+                        toast.success(`${source.name} data source added`);
+                        setShowAddModal(false);
+                      }
                     }}
                     className="flex items-center gap-3 p-4 bg-secondary/50 border border-border rounded-lg hover:border-primary transition-colors text-left"
                   >
@@ -140,6 +195,11 @@ function ConnectionsContent() {
         </div>
       )}
       <SearchModal />
+      <PostgreSQLConfigModal
+        isOpen={showPostgreSQLModal}
+        onClose={() => setShowPostgreSQLModal(false)}
+        onSave={handlePostgreSQLSave}
+      />
     </div>
   );
 }

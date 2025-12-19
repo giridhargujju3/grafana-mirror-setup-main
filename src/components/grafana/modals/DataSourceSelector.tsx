@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Search, Database, Cloud, Server, Table2, Zap, Check, Layers, LayoutDashboard, Sparkles } from "lucide-react";
 import { useDashboard, DataSource, PanelConfig } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
+import { PostgreSQLDataSource } from "@/lib/postgresDataSource";
 
 const dataSourceIcons: Record<string, React.ReactNode> = {
   prometheus: <Cloud size={24} className="text-grafana-orange" />,
@@ -39,7 +40,6 @@ export function DataSourceSelector({ onSelect, showAsPopup = false }: DataSource
   const { 
     showDataSourceSelector, 
     setShowDataSourceSelector, 
-    dataSources,
     selectedDataSource,
     setSelectedDataSource,
     setShowPanelEditor,
@@ -49,10 +49,47 @@ export function DataSourceSelector({ onSelect, showAsPopup = false }: DataSource
   } = useDashboard();
   
   const [searchTerm, setSearchTerm] = useState("");
+  const [realDataSources, setRealDataSources] = useState<DataSource[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadDataSources();
+  }, []);
+
+  const loadDataSources = async () => {
+    try {
+      console.log('Loading data sources from backend...');
+      const sources = await PostgreSQLDataSource.listDataSources();
+      console.log('Loaded data sources:', sources);
+      
+      const mappedSources: DataSource[] = sources.map(source => ({
+        id: source.id,
+        name: source.name,
+        type: source.type as any,
+        isDefault: source.isDefault || false
+      }));
+      
+      console.log('Mapped data sources:', mappedSources);
+      setRealDataSources(mappedSources);
+      
+      if (mappedSources.length === 0) {
+        console.warn('No data sources returned from backend');
+      }
+    } catch (error) {
+      console.error('Failed to load data sources:', error);
+      // Show the actual error to user
+      toast.error(`Failed to load data sources: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      
+      // Fallback to empty array to show "No data sources found"
+      setRealDataSources([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (!showDataSourceSelector && !showAsPopup) return null;
 
-  const filteredDataSources = dataSources.filter(ds => 
+  const filteredDataSources = realDataSources.filter(ds => 
     ds.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -130,9 +167,19 @@ export function DataSourceSelector({ onSelect, showAsPopup = false }: DataSource
 
         {/* Data sources list */}
         <div className="max-h-80 overflow-y-auto px-2 pb-2">
-          {filteredDataSources.length === 0 ? (
+          {loading ? (
             <div className="text-center py-8 text-muted-foreground">
-              No data sources found
+              Loading data sources...
+            </div>
+          ) : filteredDataSources.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <div className="mb-2">No data sources found</div>
+              <button 
+                onClick={loadDataSources}
+                className="text-xs px-3 py-1 bg-secondary rounded hover:bg-secondary/80"
+              >
+                Refresh
+              </button>
             </div>
           ) : (
             <div className="space-y-1">
