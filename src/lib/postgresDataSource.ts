@@ -142,4 +142,22 @@ export class PostgreSQLDataSource {
       return [];
     }
   }
+
+  static async deleteDataSource(id: string): Promise<void> {
+    try {
+      const response = await fetch(`${API_BASE}/datasources/${id}`, {
+        method: 'DELETE'
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to delete data source');
+      }
+      
+      console.log('Data source deleted successfully:', id);
+    } catch (error) {
+      console.error('Delete data source error:', error);
+      throw new Error(error instanceof Error ? error.message : 'Failed to delete data source');
+    }
+  }
 }

@@ -76,6 +76,11 @@ export function PanelEditorModal() {
     dataSources,
     setShowDataSourceSelector,
     selectedDataSource,
+    setShowSaveDashboardModal,
+    dashboardState,
+    selectedVizType,
+    setSelectedVizType,
+    panels, // Add panels to access current panels
   } = useDashboard();
   
   const [title, setTitle] = useState("");
@@ -94,20 +99,24 @@ export function PanelEditorModal() {
   const pieData = useMemo(() => generatePieData(), []);
 
   useEffect(() => {
+    console.log('PanelEditorModal useEffect - editingPanel:', editingPanel?.id || 'NULL', 'selectedVizType:', selectedVizType);
     if (editingPanel) {
+      console.log('Setting up for EDITING panel:', editingPanel.id);
       setTitle(editingPanel.title);
       setDescription(editingPanel.description || "");
       setVizType(editingPanel.type);
       setQueries(editingPanel.targets || [{ refId: "A", expr: "", datasource: "prometheus", queryMode: "code" }]);
     } else {
+      console.log('Setting up for NEW panel with vizType:', selectedVizType || 'timeseries');
       setTitle("New Panel");
       setDescription("");
-      setVizType("timeseries");
+      setVizType(selectedVizType || "timeseries");
       setQueries([{ refId: "A", expr: "", datasource: selectedDataSource?.id || "prometheus", queryMode: "code" }]);
     }
-  }, [editingPanel, selectedDataSource]);
+  }, [editingPanel, selectedDataSource, selectedVizType]);
 
   if (!showPanelEditor) return null;
+  console.log('PanelEditorModal rendering - editingPanel:', editingPanel?.id || 'NULL');
 
   const handleRunQuery = async () => {
     const currentQuery = queries[activeQueryIndex];
@@ -230,7 +239,11 @@ export function PanelEditorModal() {
   };
 
   const handleApply = () => {
-    if (editingPanel) {
+    // Check if this is truly a new panel or existing panel
+    const isExistingPanel = editingPanel && panels.some(p => p.id === editingPanel.id);
+    
+    if (isExistingPanel) {
+      console.log('Updating existing panel:', editingPanel.id);
       updatePanel(editingPanel.id, {
         title,
         description,
@@ -248,16 +261,28 @@ export function PanelEditorModal() {
         options: {},
         targets: queries,
       };
+      console.log('Adding new panel:', newPanel.id, 'Title:', title);
+      console.log('editingPanel was:', editingPanel?.id, 'but treating as new');
       addPanel(newPanel);
       toast.success("Panel added to dashboard");
     }
+    
     setShowPanelEditor(false);
     setEditingPanel(null);
+    setSelectedVizType(null);
+    
+    // Show save modal after panel is added (for new dashboards)
+    if (dashboardState.isNew) {
+      setTimeout(() => {
+        setShowSaveDashboardModal(true);
+      }, 200); // Increased delay to ensure panel is added
+    }
   };
 
   const handleDiscard = () => {
     setShowPanelEditor(false);
     setEditingPanel(null);
+    setSelectedVizType(null);
     toast.info("Changes discarded");
   };
 
@@ -482,7 +507,7 @@ export function PanelEditorModal() {
           </button>
           <button onClick={handleApply} className="grafana-btn grafana-btn-primary">
             <Save size={16} />
-            Apply
+            Save dashboard
           </button>
         </div>
       </div>

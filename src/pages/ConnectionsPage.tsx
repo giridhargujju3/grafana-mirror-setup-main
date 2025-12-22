@@ -63,6 +63,17 @@ function ConnectionsContent() {
     setShowPostgreSQLModal(false);
   };
 
+  const handleDeleteDataSource = async (sourceId: string, sourceName: string) => {
+    try {
+      await PostgreSQLDataSource.deleteDataSource(sourceId);
+      await loadDataSources(); // Reload the list
+      toast.success(`${sourceName} deleted successfully`);
+    } catch (error) {
+      console.error('Failed to delete data source:', error);
+      toast.error(`Failed to delete ${sourceName}`);
+    }
+  };
+
   const filteredSources = dataSources.filter(source =>
     source.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -143,7 +154,7 @@ function ConnectionsContent() {
                       <Settings size={18} />
                     </button>
                     <button
-                      onClick={() => toast.success(`${source.name} deleted`)}
+                      onClick={() => handleDeleteDataSource(source.id, source.name)}
                       className="p-2 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                     >
                       <Trash2 size={18} />

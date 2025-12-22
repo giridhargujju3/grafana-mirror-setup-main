@@ -24,6 +24,8 @@ export function SaveDashboardModal() {
     setDashboardTags,
     dashboardState,
     saveDashboard,
+    setIsEditMode,
+    panels, // Add panels to get current panels
   } = useDashboard();
   
   const [title, setTitle] = useState(dashboardTitle);
@@ -41,9 +43,20 @@ export function SaveDashboardModal() {
       return;
     }
 
+    console.log('SaveDashboardModal - handleSave called. Current state:', {
+      title,
+      folder,
+      dashboardStateIsNew: dashboardState.isNew,
+      currentPanelsCount: panels.length
+    });
+    
+    console.log('Current panels in SaveDashboardModal:', panels);
+
     setDashboardTitle(title);
     setDashboardFolder(folder);
     setDashboardTags(tagsInput.split(",").map(t => t.trim()).filter(Boolean));
+    
+    console.log('Calling saveDashboard with:', { title, folder, panelsCount: panels.length });
     saveDashboard({
       title,
       folder,
@@ -55,6 +68,9 @@ export function SaveDashboardModal() {
     
     // Trigger a storage event to refresh other components
     window.dispatchEvent(new Event('storage'));
+    
+    // Exit edit mode after saving
+    setIsEditMode(false);
   };
 
   const handleSaveAs = () => {

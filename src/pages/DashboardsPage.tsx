@@ -53,8 +53,8 @@ function DashboardsContent() {
 
   const handleOpenDashboard = (dashboard: any) => {
     if (dashboard.id) {
-      // For saved dashboards, navigate with the dashboard data
-      navigate(`/dashboard/${dashboard.id}`, { state: { dashboardData: dashboard } });
+      // For saved dashboards, navigate with the dashboard data in view mode (not edit)
+      navigate(`/dashboard/${dashboard.id}`, { state: { dashboardData: dashboard, editMode: false } });
     } else {
       // For registry dashboards
       navigate(`/dashboard/${dashboard.id || dashboard.uid}`);

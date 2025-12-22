@@ -72,22 +72,26 @@ export function GrafanaHeader() {
     dashboardState,
     saveDashboard,
     discardChanges,
+    setShowPanelEditor,
+    setEditingPanel,
+    setSelectedVizType,
   } = useDashboard();
 
   const [showTimeDropdown, setShowTimeDropdown] = useState(false);
   const [showRefreshDropdown, setShowRefreshDropdown] = useState(false);
   const [showMoreDropdown, setShowMoreDropdown] = useState(false);
+  const [showVisualizationDropdown, setShowVisualizationDropdown] = useState(false);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState(dashboardTitle);
   const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (!(e.target as Element).closest('.dropdown-container')) {
         setShowTimeDropdown(false);
         setShowRefreshDropdown(false);
         setShowMoreDropdown(false);
+        setShowVisualizationDropdown(false);
       }
     };
     document.addEventListener('click', handleClick);
@@ -157,9 +161,17 @@ export function GrafanaHeader() {
     setShowSaveDashboardModal(true);
   };
 
+  const handleSelectVisualization = (vizType: string) => {
+    setIsEditMode(true);
+    setSelectedVizType(vizType);
+    setEditingPanel(null);
+    setShowPanelEditor(true);
+    setShowVisualizationDropdown(false);
+    toast.info(`Creating new ${vizType} panel`);
+  };
+
   const handleEditModeToggle = () => {
     if (isEditMode && dashboardState.isDirty) {
-      // Exiting edit mode with unsaved changes - prompt to save
       setShowSaveDashboardModal(true);
     } else {
       setIsEditMode(!isEditMode);
@@ -253,15 +265,83 @@ export function GrafanaHeader() {
           {/* Edit mode buttons */}
           {isEditMode ? (
             <>
+              <div className="relative dropdown-container">
+                <button 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowVisualizationDropdown(!showVisualizationDropdown);
+                  }}
+                  className="grafana-btn grafana-btn-primary"
+                  title="Add panel to dashboard"
+                >
+                  <Plus size={16} />
+                  <span>Add</span>
+                  <ChevronDown size={14} />
+                </button>
+                {showVisualizationDropdown && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-popover border border-border rounded-md shadow-lg z-50 py-1 animate-fade-in">
+                    <button
+                      onClick={() => {
+                        setSelectedVizType('timeseries');
+                        setEditingPanel(null);
+                        setShowPanelEditor(true);
+                        setShowVisualizationDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-secondary transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center">
+                        📈
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">Visualization</div>
+                        <div className="text-xs text-muted-foreground">Add a new panel with a query</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        toast.info('Import from library - Coming soon');
+                        setShowVisualizationDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-secondary transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-secondary/50 rounded flex items-center justify-center">
+                        📚
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">Import from library</div>
+                        <div className="text-xs text-muted-foreground">Add a panel from the panel library</div>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => {
+                        toast.info('Row - Coming soon');
+                        setShowVisualizationDropdown(false);
+                      }}
+                      className="w-full flex items-center gap-3 px-3 py-2 text-sm hover:bg-secondary transition-colors"
+                    >
+                      <div className="w-8 h-8 bg-secondary/50 rounded flex items-center justify-center">
+                        📋
+                      </div>
+                      <div className="text-left">
+                        <div className="font-medium">Row</div>
+                        <div className="text-xs text-muted-foreground">Add a row to group panels</div>
+                      </div>
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="h-6 w-px bg-border mx-1" />
               <button 
                 onClick={handleDiscardChanges}
                 className="grafana-btn grafana-btn-secondary"
+                title="Discard unsaved changes"
               >
                 Discard
               </button>
               <button 
                 onClick={handleSave}
                 className="grafana-btn grafana-btn-primary"
+                title="Save all changes to dashboard"
               >
                 <Save size={16} />
                 Save dashboard
@@ -271,32 +351,14 @@ export function GrafanaHeader() {
             <button 
               onClick={handleEditModeToggle}
               className="grafana-btn grafana-btn-secondary"
+              title="Enter edit mode to add panels"
             >
               <Edit size={16} />
               <span className="hidden sm:inline">Edit</span>
             </button>
           )}
 
-          {/* Add panel button */}
-          {isEditMode && (
-            <>
-              <button 
-                onClick={handleAddPanel}
-                className="grafana-btn grafana-btn-secondary"
-              >
-                <Plus size={16} />
-                <span className="hidden sm:inline">Add</span>
-              </button>
-              <button 
-                onClick={() => setShowCSVImportModal(true)}
-                className="grafana-btn grafana-btn-secondary"
-                title="Import CSV data"
-              >
-                <FileText size={16} />
-                <span className="hidden sm:inline">CSV</span>
-              </button>
-            </>
-          )}
+          <div className="h-6 w-px bg-border mx-1" />
 
           {/* Time range picker */}
           <div className="relative dropdown-container">

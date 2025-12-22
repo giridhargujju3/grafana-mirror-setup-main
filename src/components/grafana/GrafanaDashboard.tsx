@@ -78,6 +78,8 @@ const generateLogs = (dataRefreshKey: number) => [
 
 function DashboardContent() {
   const { isRefreshing, panels, dataRefreshKey, isEditMode, reorderPanels, showCSVImportModal, setShowCSVImportModal, showJSONModal, setShowJSONModal } = useDashboard();
+  
+  console.log('DashboardContent - panels:', panels, 'length:', panels?.length);
 
   const handleDragEnd = useCallback((result: DropResult) => {
     if (!result.destination) return;

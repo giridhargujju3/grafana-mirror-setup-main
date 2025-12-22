@@ -1,0 +1,158 @@
+
+> vite_react_shadcn_ts@0.0.0 lint
+> eslint .
+
+
+c:\Users\Seai_\grafana-mirror-setup-main\server\src\config\database.ts
+  42:37  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\server\src\services\postgresService.ts
+  37:40  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  42:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:44  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\server\src\types\datasource.ts
+  49:11  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  71:13  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\CSVImportModal.tsx
+  238:6  warning  React Hook useCallback has a missing dependency: 'state'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\GrafanaSidebar.tsx
+   66:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   67:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  114:45  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  120:39  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  134:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  156:29  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\datasources\CSVDataSourceConfig.tsx
+  15:53  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\modals\DataSourceSelector.tsx
+  69:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\modals\JSONEditorModal.tsx
+  116:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\modals\PanelEditorModal.tsx
+   91:50  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   93:67  warning  React Hook useMemo has an unnecessary dependency: 'isRunning'. Either exclude it or remove the dependency array  react-hooks/exhaustive-deps
+  431:61  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\modals\PostgreSQLConfigModal.tsx
+  183:91  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\panels\BarChartPanel.tsx
+  15:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\panels\CSVQueryEditor.tsx
+   29:50  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   43:64  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+   51:6   warning  React Hook useCallback has a missing dependency: 'previewCSV'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  288:54  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+  299:56  error    Unexpected any. Specify a different type                                                                         @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\panels\PieChartPanel.tsx
+  6:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  8:16  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\panels\TablePanel.tsx
+   8:20  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   8:30  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  19:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  34:21  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:62  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\grafana\panels\TimeSeriesPanel.tsx
+  20:10  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  22:23  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\badge.tsx
+  29:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\button.tsx
+  47:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\command.tsx
+  24:11  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\form.tsx
+  129:10  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\navigation-menu.tsx
+  111:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\sidebar.tsx
+  636:3  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\sonner.tsx
+  27:19  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\textarea.tsx
+  5:18  error  An interface declaring no members is equivalent to its supertype  @typescript-eslint/no-empty-object-type
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\components\ui\toggle.tsx
+  37:18  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\contexts\DashboardContext.tsx
+    8:27  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   25:27  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   38:15  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+   42:12  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  539:57  error    Unexpected any. Specify a different type                                                                                        @typescript-eslint/no-explicit-any
+  643:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\contexts\DashboardRegistryContext.tsx
+  322:17  warning  Fast refresh only works when a file only exports components. Use a new file to share constants or functions between components  react-refresh/only-export-components
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\hooks\useCSVData.ts
+   15:80  error    Unexpected any. Specify a different type                                                                            @typescript-eslint/no-explicit-any
+   38:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   57:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   72:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   82:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   87:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   92:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+   97:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  102:6   warning  React Hook useCallback has a missing dependency: 'csvDataSource'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\lib\csvDataSource.ts
+    9:11  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+   21:27  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  194:92  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  203:11  error  Unexpected lexical declaration in case block  no-case-declarations
+  338:91  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+  342:18  error  Unexpected any. Specify a different type      @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\lib\postgresDataSource.ts
+   16:9   error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   81:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   86:52  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  133:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\pages\DashboardEditorPage.tsx
+  24:56  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  39:55  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\pages\DashboardsPage.tsx
+  14:58  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  47:27  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  54:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\pages\ExplorePage.tsx
+   84:42  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  371:47  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  385:43  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\src\pages\PanelEditorPage.tsx
+   20:50  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  143:77  error  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+c:\Users\Seai_\grafana-mirror-setup-main\tailwind.config.ts
+  129:13  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+✖ 83 problems (63 errors, 20 warnings)
+

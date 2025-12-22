@@ -387,7 +387,7 @@ export function GrafanaSidebar() {
                         if (allDashboardsInFolder.length === 0) return null;
                         
                         return (
-                          <li key={folderName}>
+                          <li key={`folder-${folderName}`}>
                             <div className="flex items-center group">
                               <button
                                 onClick={() => toggleFolder(folderName.toLowerCase())}
@@ -408,7 +408,7 @@ export function GrafanaSidebar() {
                             {expandedFolders.includes(folderName.toLowerCase()) && (
                               <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-2">
                                 {allDashboardsInFolder.map((dash) => (
-                                  <li key={dash.id} className="flex items-center group">
+                                  <li key={`dash-${dash.id}`} className="flex items-center group">
                                     <button
                                       onClick={() => navigate(`/dashboard/${dash.id}`)}
                                       className="flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded-l transition-colors text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50 truncate"
@@ -486,7 +486,7 @@ export function GrafanaSidebar() {
                             {expandedFolders.includes(folder.id) && folderDashboards.length > 0 && (
                               <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-2">
                                 {folderDashboards.map((dash) => (
-                                  <li key={dash.id} className="flex items-center group">
+                                  <li key={`custom-dash-${dash.id}`} className="flex items-center group">
                                     <button
                                       onClick={() => navigate(`/dashboard/${dash.id}`)}
                                       className="flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded-l transition-colors text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50 truncate"

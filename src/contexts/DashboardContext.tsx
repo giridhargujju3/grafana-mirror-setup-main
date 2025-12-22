@@ -215,6 +215,10 @@ interface DashboardContextType {
   
   // Data refresh
   dataRefreshKey: number;
+  
+  // Visualization selection
+  selectedVizType: string | null;
+  setSelectedVizType: (type: string | null) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -329,6 +333,7 @@ interface DashboardProviderProps {
   initialPanels?: PanelConfig[];
   isNewDashboard?: boolean;
   dashboardId?: string;
+  initialEditMode?: boolean;
 }
 
 export function DashboardProvider({ 
@@ -339,6 +344,7 @@ export function DashboardProvider({
   initialPanels,
   isNewDashboard = false,
   dashboardId,
+  initialEditMode = false,
 }: DashboardProviderProps) {
   const [timeRange, setTimeRange] = useState("Last 6 hours");
   const [refreshInterval, setRefreshInterval] = useState("Off");
@@ -361,12 +367,24 @@ export function DashboardProvider({
   const [dashboardTags, setDashboardTags] = useState<string[]>(initialTags);
   
   // Use initialPanels if provided, otherwise use empty array for new dashboards or defaults
-  const [panels, setPanels] = useState<PanelConfig[]>(initialPanels || (isNewDashboard ? [] : defaultPanels));
-  const [isEditMode, setIsEditMode] = useState(isNewDashboard); // Auto-enter edit mode for new dashboards
+  const [panels, setPanels] = useState<PanelConfig[]>(() => {
+    console.log('DashboardProvider initializing panels:', { initialPanels, isNewDashboard, initialPanelsLength: initialPanels?.length });
+    if (initialPanels !== undefined) {
+      console.log('Using initialPanels:', initialPanels);
+      return initialPanels;
+    }
+    const fallback = isNewDashboard ? [] : defaultPanels;
+    console.log('Using fallback panels:', fallback.length);
+    return fallback;
+  });
+  
+  console.log('DashboardProvider - Current panels state:', panels, 'length:', panels?.length);
+  const [isEditMode, setIsEditMode] = useState(initialEditMode || isNewDashboard); // Use initialEditMode or auto-enter for new dashboards
   const [variables, setVariables] = useState<Record<string, string>>({ env: "production", region: "us-east-1" });
   const [dataRefreshKey, setDataRefreshKey] = useState(0);
   const [selectedDataSource, setSelectedDataSource] = useState<DataSource | null>(defaultDataSources[0]);
   const [showVariablesModal, setShowVariablesModal] = useState(false);
+  const [selectedVizType, setSelectedVizType] = useState<string | null>(null);
   
   // Dashboard Variables (templating system)
   const [dashboardVariables, setDashboardVariables] = useState<DashboardVariable[]>([
@@ -410,12 +428,12 @@ export function DashboardProvider({
     setDataRefreshKey(prev => prev + 1);
   }, []);
   
-  const [dashboardState, setDashboardState] = useState<DashboardState>({
+  const [dashboardState, setDashboardState] = useState<DashboardState>(() => ({
     isDirty: false,
     isNew: isNewDashboard,
-    originalPanels: initialPanels || (isNewDashboard ? [] : defaultPanels),
+    originalPanels: initialPanels !== undefined ? initialPanels : (isNewDashboard ? [] : defaultPanels),
     lastSaved: isNewDashboard ? undefined : new Date(),
-  });
+  }));
 
   const triggerRefresh = useCallback(() => {
     setIsRefreshing(true);
@@ -453,9 +471,16 @@ export function DashboardProvider({
   }, []);
 
   const addPanel = useCallback((panel: PanelConfig) => {
-    setPanels(prev => [...prev, panel]);
+    console.log('addPanel called with:', panel.id, panel.type);
+    console.log('Current panels before add:', panels.length);
+    setPanels(prev => {
+      const updated = [...prev, panel];
+      console.log('Panels updated. Total panels:', updated.length);
+      console.log('Updated panels array:', updated);
+      return updated;
+    });
     markDirty();
-  }, [markDirty]);
+  }, [markDirty, panels.length]);
 
   const updatePanel = useCallback((id: string, updates: Partial<PanelConfig>) => {
     setPanels(prev => prev.map(p => p.id === id ? { ...p, ...updates } : p));
@@ -517,12 +542,15 @@ export function DashboardProvider({
     const folderToSave = options?.folder || dashboardFolder;
     const tagsToSave = options?.tags || dashboardTags;
 
+    console.log('Saving dashboard:', { id: newDashboardId, title: titleToSave, panelCount: panels.length });
+    console.log('Panels being saved:', panels);
+
     // Save to localStorage for persistence
     const dashboardData = {
       id: newDashboardId,
       uid: newDashboardId,
       title: titleToSave,
-      panels,
+      panels: [...panels], // Ensure we're saving a copy of the panels array
       tags: tagsToSave,
       folder: folderToSave,
       savedAt: new Date().toISOString(),
@@ -533,16 +561,21 @@ export function DashboardProvider({
       version: 1
     };
     
+    console.log('Dashboard data to save:', dashboardData);
+    
     const savedDashboards = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
-    const existingIndex = savedDashboards.findIndex((d: any) => d.id === newDashboardId || d.title === titleToSave);
+    const existingIndex = savedDashboards.findIndex((d: any) => d.id === newDashboardId);
     
     if (existingIndex >= 0) {
-      savedDashboards[existingIndex] = { ...savedDashboards[existingIndex], ...dashboardData };
+      console.log('Updating existing dashboard at index:', existingIndex);
+      savedDashboards[existingIndex] = dashboardData;
     } else {
+      console.log('Creating new dashboard');
       savedDashboards.push(dashboardData);
     }
     
     localStorage.setItem('grafana-dashboards', JSON.stringify(savedDashboards));
+    console.log('Dashboard saved to localStorage. Total dashboards:', savedDashboards.length);
     
     setDashboardState(prev => ({
       ...prev,
@@ -631,6 +664,8 @@ export function DashboardProvider({
         showVariablesModal,
         setShowVariablesModal,
         dataRefreshKey,
+        selectedVizType,
+        setSelectedVizType,
       }}
     >
       {children}
