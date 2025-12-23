@@ -239,30 +239,27 @@ export function PanelEditorModal() {
   };
 
   const handleApply = () => {
-    // Check if this is truly a new panel or existing panel
-    const isExistingPanel = editingPanel && panels.some(p => p.id === editingPanel.id);
-    
-    if (isExistingPanel) {
-      console.log('Updating existing panel:', editingPanel.id);
-      updatePanel(editingPanel.id, {
-        title,
-        description,
-        type: vizType as PanelConfig["type"],
-        targets: queries,
-      });
+    const panelUpdates = {
+      title,
+      description,
+      type: vizType as PanelConfig["type"],
+      targets: [...queries],
+      options: {
+        queryResult: queryResult,
+      },
+    };
+
+    if (editingPanel) {
+      console.log('Updating panel:', editingPanel.id, 'with queries:', queries);
+      updatePanel(editingPanel.id, panelUpdates);
       toast.success("Panel updated");
     } else {
       const newPanel: PanelConfig = {
         id: `panel-${Date.now()}`,
-        type: vizType as PanelConfig["type"],
-        title,
-        description,
+        ...panelUpdates,
         gridPos: { x: 0, y: 0, w: 6, h: 4 },
-        options: {},
-        targets: queries,
       };
-      console.log('Adding new panel:', newPanel.id, 'Title:', title);
-      console.log('editingPanel was:', editingPanel?.id, 'but treating as new');
+      console.log('Adding new panel:', newPanel.id, 'Title:', title, 'with query result:', queryResult);
       addPanel(newPanel);
       toast.success("Panel added to dashboard");
     }
@@ -271,11 +268,10 @@ export function PanelEditorModal() {
     setEditingPanel(null);
     setSelectedVizType(null);
     
-    // Show save modal after panel is added (for new dashboards)
     if (dashboardState.isNew) {
       setTimeout(() => {
         setShowSaveDashboardModal(true);
-      }, 200); // Increased delay to ensure panel is added
+      }, 200);
     }
   };
 

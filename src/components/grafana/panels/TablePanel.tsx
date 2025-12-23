@@ -13,15 +13,41 @@ interface CSVData {
   rows: string[][];
 }
 
+interface QueryResult {
+  columns: string[];
+  rows: any[][];
+  rowCount?: number;
+}
+
 interface TablePanelProps {
   title: string;
   columns?: Column[];
   data?: any[];
   csvData?: CSVData;
+  queryResult?: QueryResult;
   panelId?: string;
 }
 
-export function TablePanel({ title, columns, data, csvData }: TablePanelProps) {
+export function TablePanel({ title, columns, data, csvData, queryResult }: TablePanelProps) {
+  // Handle query result if provided
+  if (queryResult && queryResult.columns && queryResult.rows) {
+    const queryColumns: Column[] = queryResult.columns.map(header => ({
+      key: header,
+      label: header,
+      align: "left" as const
+    }));
+    
+    const queryTableData = queryResult.rows.map((row) => {
+      const rowObj: any = {};
+      queryResult.columns.forEach((header, colIndex) => {
+        rowObj[header] = row[colIndex] || '';
+      });
+      return rowObj;
+    });
+    
+    return renderTable(title, queryColumns, queryTableData);
+  }
+
   // Handle CSV data if provided
   if (csvData && csvData.headers && csvData.rows) {
     const csvColumns: Column[] = csvData.headers.map(header => ({

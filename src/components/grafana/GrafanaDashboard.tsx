@@ -164,6 +164,17 @@ function DashboardContent() {
           />
         );
       case "table":
+        // Check if this is a query result
+        if (panel.options.queryResult && panel.options.queryResult.columns && panel.options.queryResult.rows) {
+          return (
+            <TablePanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+            />
+          );
+        }
         // Check if this is a CSV data table
         if (panel.options.csvData) {
           return (
