@@ -535,8 +535,9 @@ export function DashboardProvider({
   }, [markDirty]);
 
   const saveDashboard = useCallback((options?: { title?: string; folder?: string; tags?: string[] }) => {
-    // Generate unique ID if new dashboard
-    const newDashboardId = dashboardState.isNew ? `dashboard-${Date.now()}` : (dashboardId || `dashboard-${Date.now()}`);
+    // Use the dashboardId prop (already generated when dashboard was created)
+    // If no dashboardId, generate one (fallback only)
+    const newDashboardId = dashboardId || `dashboard-${Date.now()}`;
     
     const titleToSave = options?.title || dashboardTitle;
     const folderToSave = options?.folder || dashboardFolder;
@@ -585,8 +586,8 @@ export function DashboardProvider({
       lastSaved: new Date(),
     }));
     
-    // Store dashboard ID for future reference
-    if (dashboardState.isNew) {
+    // Ensure URL matches the dashboard ID
+    if (window.location.pathname !== `/dashboard/${newDashboardId}`) {
       window.history.replaceState(null, '', `/dashboard/${newDashboardId}`);
     }
   }, [panels, dashboardTitle, dashboardTags, dashboardFolder, timeRange, refreshInterval, isStarred, dashboardState.isNew, dashboardId]);

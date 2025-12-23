@@ -249,15 +249,19 @@ export function PanelEditorModal() {
       },
     };
 
-    if (editingPanel) {
+    // Check if editing existing panel (already in panels array) or creating new panel
+    const isExistingPanel = editingPanel && panels.some(p => p.id === editingPanel.id);
+
+    if (isExistingPanel && editingPanel) {
       console.log('Updating panel:', editingPanel.id, 'with queries:', queries);
       updatePanel(editingPanel.id, panelUpdates);
       toast.success("Panel updated");
     } else {
+      const panelId = editingPanel?.id || `panel-${Date.now()}`;
       const newPanel: PanelConfig = {
-        id: `panel-${Date.now()}`,
+        id: panelId,
         ...panelUpdates,
-        gridPos: { x: 0, y: 0, w: 6, h: 4 },
+        gridPos: editingPanel?.gridPos || { x: 0, y: 0, w: 6, h: 4 },
       };
       console.log('Adding new panel:', newPanel.id, 'Title:', title, 'with query result:', queryResult);
       addPanel(newPanel);
