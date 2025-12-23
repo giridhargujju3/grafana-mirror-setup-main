@@ -17,6 +17,44 @@ interface CSVImportState {
   csvUrl: string;
 }
 
+// Helper to extract data from various JSON formats
+const extractDataFromJSON = (json: any): CSVData | null => {
+  // 1. Check for Grafana style { columns: [], rows: [] }
+  if (json?.columns && Array.isArray(json.columns) && json?.rows && Array.isArray(json.rows)) {
+    return {
+      headers: json.columns,
+      rows: json.rows
+    };
+  }
+
+  // 2. Check for queryResult wrapper
+  if (json?.queryResult) {
+    return extractDataFromJSON(json.queryResult);
+  }
+  
+  // 3. Check for options.queryResult (Panel JSON)
+  if (json?.options?.queryResult) {
+    return extractDataFromJSON(json.options.queryResult);
+  }
+
+  // 4. Check for panels array (Dashboard JSON) - take first panel with data
+  if (json?.panels && Array.isArray(json.panels)) {
+    for (const panel of json.panels) {
+      const data = extractDataFromJSON(panel);
+      if (data) return data;
+    }
+  }
+
+  // 5. Check for Array of Objects
+  if (Array.isArray(json) && json.length > 0 && typeof json[0] === 'object' && json[0] !== null && !Array.isArray(json[0])) {
+    const headers = Object.keys(json[0]);
+    const rows = json.map((obj: any) => headers.map(h => obj[h]));
+    return { headers, rows };
+  }
+
+  return null;
+};
+
 export function CSVImportModal({ isOpen, onClose }: CSVImportModalProps) {
   const [state, setState] = useState<CSVImportState>({
     csvData: null,
@@ -80,11 +118,34 @@ export function CSVImportModal({ isOpen, onClose }: CSVImportModalProps) {
 
   const handleTextChange = useCallback((text: string) => {
     setState(prev => ({ ...prev, csvText: text, dataSource: 'text' }));
-    if (text.trim()) {
-      parseCSV(text);
-    } else {
+    
+    if (!text.trim()) {
       setState(prev => ({ ...prev, csvData: null, error: null }));
+      return;
     }
+
+    // Try to parse as JSON first
+    const trimmed = text.trim();
+    if ((trimmed.startsWith('{') || trimmed.startsWith('[')) && (trimmed.endsWith('}') || trimmed.endsWith(']'))) {
+      try {
+        const json = JSON.parse(text);
+        const jsonData = extractDataFromJSON(json);
+        
+        if (jsonData) {
+          setState(prev => ({ 
+            ...prev, 
+            csvData: jsonData, 
+            error: null,
+            isLoading: false 
+          }));
+          return;
+        }
+      } catch (e) {
+        // Ignore JSON parse errors and fall back to CSV parsing
+      }
+    }
+
+    parseCSV(text);
   }, [parseCSV]);
 
   const handleUrlLoad = useCallback(async () => {
@@ -355,7 +416,7 @@ export function CSVImportModal({ isOpen, onClose }: CSVImportModalProps) {
               {state.dataSource === 'text' && (
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                    Paste CSV Content
+                    Paste CSV or JSON Content
                   </label>
                   <textarea
                     value={state.csvText}

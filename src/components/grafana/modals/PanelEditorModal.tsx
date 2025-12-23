@@ -8,21 +8,14 @@ import { useDashboard, PanelConfig, QueryTarget } from "@/contexts/DashboardCont
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { SQLQueryBuilder } from "../panels/SQLQueryBuilder";
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-} from "recharts";
+import { TimeSeriesPanel } from "../panels/TimeSeriesPanel";
+import { StatPanel } from "../panels/StatPanel";
+import { GaugePanel } from "../panels/GaugePanel";
+import { BarChartPanel } from "../panels/BarChartPanel";
+import { TablePanel } from "../panels/TablePanel";
+import { PieChartPanel } from "../panels/PieChartPanel";
+import { AlertListPanel } from "../panels/AlertListPanel";
+import { LogsPanel } from "../panels/LogsPanel";
 
 const visualizationTypes = [
   { id: "timeseries", name: "Time series", icon: "📈" },
@@ -324,161 +317,96 @@ export function PanelEditorModal() {
   };
 
   const renderPreview = () => {
+    // Common props for all panels
+    const commonProps = {
+      title: title || "Panel Title",
+      panelId: "preview-panel",
+      queryResult: queryResult,
+    };
+
     switch (vizType) {
       case "timeseries":
         return (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={previewData}>
-              <defs>
-                {queries.map((q, i) => (
-                  <linearGradient key={q.refId} id={`gradient-${q.refId}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.4} />
-                    <stop offset="100%" stopColor={CHART_COLORS[i % CHART_COLORS.length]} stopOpacity={0.05} />
-                  </linearGradient>
-                ))}
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 18%, 22%)" vertical={false} />
-              <XAxis dataKey="time" stroke="hsl(210, 15%, 55%)" fontSize={11} tickLine={false} />
-              <YAxis stroke="hsl(210, 15%, 55%)" fontSize={11} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(220, 18%, 15%)",
-                  border: "1px solid hsl(220, 18%, 22%)",
-                  borderRadius: "6px",
-                }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="value"
-                name={queries[0]?.refId || "A"}
-                stroke={CHART_COLORS[0]}
-                strokeWidth={2}
-                fill={`url(#gradient-${queries[0]?.refId || "A"})`}
-              />
-              {queries.length > 1 && (
-                <Area
-                  type="monotone"
-                  dataKey="value2"
-                  name={queries[1]?.refId || "B"}
-                  stroke={CHART_COLORS[1]}
-                  strokeWidth={2}
-                  fill={`url(#gradient-${queries[1]?.refId || "B"})`}
-                />
-              )}
-            </AreaChart>
-          </ResponsiveContainer>
-        );
-      case "barchart":
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={previewData.slice(0, 8)} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 18%, 22%)" />
-              <XAxis type="number" stroke="hsl(210, 15%, 55%)" fontSize={11} />
-              <YAxis dataKey="time" type="category" stroke="hsl(210, 15%, 55%)" fontSize={11} width={50} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "hsl(220, 18%, 15%)",
-                  border: "1px solid hsl(220, 18%, 22%)",
-                  borderRadius: "6px",
-                }}
-              />
-              <Bar dataKey="value" fill={CHART_COLORS[0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        );
-      case "piechart":
-        return (
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={100}
-                paddingAngle={2}
-                dataKey="value"
-                label
-              >
-                {pieData.map((_, index) => (
-                  <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
+          <TimeSeriesPanel
+            {...commonProps}
+            data={previewData}
+            dataKeys={[
+              { key: "value", color: CHART_COLORS[0], name: "Value" },
+              { key: "value2", color: CHART_COLORS[1], name: "Value 2" },
+            ]}
+          />
         );
       case "stat":
         return (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <div className="text-5xl font-bold text-grafana-orange">{Math.floor(Math.random() * 100)}</div>
-              <div className="text-sm text-muted-foreground mt-2">{title}</div>
-            </div>
-          </div>
+          <StatPanel
+            {...commonProps}
+            value={queryResult?.rows?.[0]?.[0] || 75}
+            unit="%"
+            subtitle="Average CPU"
+            trend="up"
+            trendValue="12%"
+            sparklineData={[30, 40, 35, 50, 49, 60, 70, 91, 125]}
+          />
         );
       case "gauge":
         return (
-          <div className="flex items-center justify-center h-full">
-            <div className="relative w-32 h-32">
-              <svg viewBox="0 0 100 100" className="w-full h-full">
-                <circle cx="50" cy="50" r="45" fill="none" stroke="hsl(220, 18%, 22%)" strokeWidth="8" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="hsl(24, 100%, 50%)"
-                  strokeWidth="8"
-                  strokeDasharray={`${72 * 2.83} 283`}
-                  transform="rotate(-90 50 50)"
-                />
-                <text x="50" y="55" textAnchor="middle" className="text-2xl font-bold fill-foreground">72%</text>
-              </svg>
-            </div>
-          </div>
+          <GaugePanel
+            {...commonProps}
+            value={queryResult?.rows?.[0]?.[0] || 65}
+            unit="%"
+          />
+        );
+      case "barchart":
+        return (
+          <BarChartPanel
+            {...commonProps}
+            data={previewData.slice(0, 8)}
+            layout="vertical"
+          />
         );
       case "table":
-        if (queryResult && queryResult.columns && queryResult.rows) {
-          return (
-            <div className="w-full h-full overflow-auto p-4">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border">
-                    {queryResult.columns.map((col: string, i: number) => (
-                      <th key={i} className="text-left p-2 font-medium">{col}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {queryResult.rows.slice(0, 100).map((row: any[], i: number) => (
-                    <tr key={i} className="border-b border-border/50 hover:bg-secondary/20">
-                      {row.map((cell, j) => (
-                        <td key={j} className="p-2">{cell}</td>
-                      ))}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {queryResult.rows.length > 100 && (
-                <div className="text-xs text-muted-foreground mt-2">
-                  Showing first 100 of {queryResult.rowCount} rows
-                </div>
-              )}
-            </div>
-          );
-        }
         return (
-          <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p>Execute a query to see table data</p>
-          </div>
+          <TablePanel
+            {...commonProps}
+            data={previewData}
+            columns={[
+              { key: "time", label: "Time" },
+              { key: "value", label: "Value" },
+              { key: "value2", label: "Value 2" },
+            ]}
+          />
+        );
+      case "piechart":
+        return (
+          <PieChartPanel
+            {...commonProps}
+            data={pieData}
+          />
+        );
+      case "alertlist":
+        return (
+          <AlertListPanel
+            {...commonProps}
+            alerts={[
+              { name: "High CPU", state: "firing", severity: "critical", message: "CPU > 90%", time: "2m ago" },
+              { name: "Memory Warning", state: "pending", severity: "warning", message: "Memory > 80%", time: "5m ago" },
+            ]}
+          />
+        );
+      case "logs":
+        return (
+          <LogsPanel
+            {...commonProps}
+            logs={[
+              { timestamp: "12:00:01", level: "info", message: "Started processing", labels: { service: "api" } },
+              { timestamp: "12:00:02", level: "error", message: "Connection failed", labels: { service: "db" } },
+            ]}
+          />
         );
       default:
         return (
           <div className="flex items-center justify-center h-full text-muted-foreground">
-            <p>Preview for {vizType}</p>
+            Visualization not implemented yet
           </div>
         );
     }

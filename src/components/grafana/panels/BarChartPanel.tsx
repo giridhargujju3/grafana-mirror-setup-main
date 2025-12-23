@@ -10,6 +10,12 @@ import {
   Legend,
 } from "recharts";
 
+interface QueryResult {
+  columns: string[];
+  rows: any[][];
+  rowCount?: number;
+}
+
 interface BarChartPanelProps {
   title: string;
   data?: any[];
@@ -17,11 +23,49 @@ interface BarChartPanelProps {
   layout?: "horizontal" | "vertical";
   panelId?: string;
   csvBarData?: any[];
+  queryResult?: QueryResult;
 }
 
-export function BarChartPanel({ title, data, dataKeys, layout = "vertical", csvBarData }: BarChartPanelProps) {
-  const chartData = csvBarData || data || [];
-  const chartKeys = dataKeys || [{ key: "value", color: "hsl(199, 89%, 48%)", name: "Value" }];
+export function BarChartPanel({ title, data, dataKeys, layout = "vertical", csvBarData, queryResult }: BarChartPanelProps) {
+  let chartData = csvBarData || data || [];
+  let chartKeys = dataKeys || [{ key: "value", color: "hsl(199, 89%, 48%)", name: "Value" }];
+
+  // Handle Query Result
+  if (queryResult && queryResult.columns && queryResult.rows) {
+    const { columns, rows } = queryResult;
+    
+    if (columns.length > 0) {
+      // Find category column (first string column)
+      let catIndex = -1;
+      if (rows.length > 0) {
+        const firstRow = rows[0];
+        catIndex = firstRow.findIndex((val: any) => typeof val === 'string');
+      }
+      if (catIndex === -1) catIndex = 0; // Default to first column
+
+      // Identify value columns (all other columns)
+      const valueColIndices = columns.map((_, i) => i).filter(i => i !== catIndex);
+
+      chartData = rows.map(row => {
+        const obj: any = {};
+        columns.forEach((col, i) => {
+          obj[col] = row[i];
+        });
+        // Map category column to 'name' for Recharts
+        obj.name = String(row[catIndex]);
+        return obj;
+      });
+
+      if (valueColIndices.length > 0) {
+        chartKeys = valueColIndices.map((i, idx) => ({
+          key: columns[i],
+          color: [`hsl(199, 89%, 48%)`, `hsl(0, 72%, 51%)`, `hsl(142, 71%, 45%)`, `hsl(24, 100%, 50%)`][idx % 4],
+          name: columns[i]
+        }));
+      }
+    }
+  }
+
   return (
     <div className="grafana-panel h-full flex flex-col">
       <div className="grafana-panel-header">

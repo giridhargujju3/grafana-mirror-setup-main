@@ -2,6 +2,12 @@ import { MoreVertical } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 
+interface QueryResult {
+  columns: string[];
+  rows: any[][];
+  rowCount?: number;
+}
+
 interface StatPanelProps {
   title: string;
   value: string | number;
@@ -12,6 +18,7 @@ interface StatPanelProps {
   color?: "orange" | "blue" | "green" | "red" | "yellow" | "purple";
   sparklineData?: number[];
   panelId?: string;
+  queryResult?: QueryResult;
 }
 
 const colorMap = {
@@ -41,7 +48,39 @@ export function StatPanel({
   trendValue,
   color = "green",
   sparklineData,
+  queryResult,
 }: StatPanelProps) {
+  
+  // Handle Query Result
+  if (queryResult && queryResult.columns && queryResult.rows) {
+    const { columns, rows } = queryResult;
+    if (rows.length > 0) {
+      // Find first numeric column
+      let valIndex = -1;
+      const firstRow = rows[0];
+      valIndex = firstRow.findIndex((val: any) => typeof val === 'number');
+      if (valIndex === -1) valIndex = columns.length - 1;
+
+      // Use last row value
+      const lastRow = rows[rows.length - 1];
+      value = lastRow[valIndex];
+
+      // Generate sparkline data from that column
+      if (rows.length > 1) {
+        const rawData = rows.map(r => Number(r[valIndex]) || 0);
+        // Normalize sparkline data to 0-100 range for SVG
+        const max = Math.max(...rawData);
+        const min = Math.min(...rawData);
+        const range = max - min;
+        if (range > 0) {
+          sparklineData = rawData.map(v => ((v - min) / range) * 100);
+        } else {
+          sparklineData = rawData.map(() => 50);
+        }
+      }
+    }
+  }
+
   const TrendIcon = trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Minus;
   const trendColor =
     trend === "up" ? "text-grafana-green" : trend === "down" ? "text-grafana-red" : "text-muted-foreground";

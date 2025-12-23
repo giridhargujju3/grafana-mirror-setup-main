@@ -14,6 +14,12 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useDashboard } from "@/contexts/DashboardContext";
 
+interface QueryResult {
+  columns: string[];
+  rows: any[][];
+  rowCount?: number;
+}
+
 interface TimeSeriesPanelProps {
   panelId?: string;
   title: string;
@@ -22,16 +28,51 @@ interface TimeSeriesPanelProps {
   csvTimeSeriesData?: any[];
   timeColumn?: string;
   numericColumns?: string[];
+  queryResult?: QueryResult;
 }
 
-export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesData, timeColumn, numericColumns }: TimeSeriesPanelProps) {
+export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesData, timeColumn, numericColumns, queryResult }: TimeSeriesPanelProps) {
   // Handle CSV data
-  const chartData = csvTimeSeriesData || data || [];
-  const chartKeys = dataKeys || (numericColumns ? numericColumns.map((col, i) => ({
+  let chartData = csvTimeSeriesData || data || [];
+  let chartKeys = dataKeys || (numericColumns ? numericColumns.map((col, i) => ({
     key: col,
     color: [`hsl(24, 100%, 50%)`, `hsl(199, 89%, 48%)`, `hsl(142, 71%, 45%)`, `hsl(280, 100%, 70%)`][i % 4],
     name: col
   })) : []);
+
+  // Handle Query Result
+  if (queryResult && queryResult.columns && queryResult.rows) {
+    const { columns, rows } = queryResult;
+    
+    if (columns.length > 0) {
+      // Find time column (look for 'time' or 'date' in name, or assume first column)
+      let timeColIndex = columns.findIndex(c => c.toLowerCase().includes('time') || c.toLowerCase().includes('date'));
+      if (timeColIndex === -1) timeColIndex = 0;
+      
+      const timeColName = columns[timeColIndex];
+      
+      // Identify value columns (all other columns)
+      const valueColIndices = columns.map((_, i) => i).filter(i => i !== timeColIndex);
+      
+      chartData = rows.map(row => {
+        const obj: any = {};
+        columns.forEach((col, i) => {
+          obj[col] = row[i];
+        });
+        return obj;
+      });
+      
+      chartKeys = valueColIndices.map((i, idx) => ({
+        key: columns[i],
+        color: [`hsl(24, 100%, 50%)`, `hsl(199, 89%, 48%)`, `hsl(142, 71%, 45%)`, `hsl(280, 100%, 70%)`][idx % 4],
+        name: columns[i]
+      }));
+      
+      // Update timeColumn to use the one from query
+      timeColumn = timeColName;
+    }
+  }
+
   const { setEditingPanel, setShowPanelEditor, removePanel, duplicatePanel, panels, isEditMode } = useDashboard();
   const [showMenu, setShowMenu] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);

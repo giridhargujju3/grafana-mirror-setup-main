@@ -94,6 +94,23 @@ function DashboardContent() {
   const renderPanel = (panel: PanelConfig) => {
     switch (panel.type) {
       case "stat":
+        if (panel.options.queryResult) {
+          return (
+            <StatPanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+              value={panel.options.value}
+              unit={panel.options.unit}
+              subtitle={panel.options.subtitle}
+              trend={panel.options.trend}
+              trendValue={panel.options.trendValue}
+              color={panel.options.color}
+              sparklineData={panel.options.sparklineData}
+            />
+          );
+        }
         return (
           <StatPanel
             key={panel.id}
@@ -109,6 +126,16 @@ function DashboardContent() {
           />
         );
       case "timeseries":
+        if (panel.options.queryResult) {
+          return (
+            <TimeSeriesPanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+            />
+          );
+        }
         if (panel.options.csvTimeSeriesData) {
           return (
             <TimeSeriesPanel
@@ -137,8 +164,30 @@ function DashboardContent() {
       case "alertlist":
         return <AlertListPanel key={panel.id} panelId={panel.id} title={panel.title} alerts={alerts} />;
       case "gauge":
+        if (panel.options.queryResult) {
+          return (
+            <GaugePanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+              value={panel.options.value || 50}
+            />
+          );
+        }
         return <GaugePanel key={panel.id} panelId={panel.id} title={panel.title} value={panel.options.value || 50} />;
       case "barchart":
+        if (panel.options.queryResult) {
+          return (
+            <BarChartPanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+              layout={panel.options.layout || "horizontal"}
+            />
+          );
+        }
         if (panel.options.csvBarData) {
           return (
             <BarChartPanel
@@ -218,6 +267,16 @@ function DashboardContent() {
       case "logs":
         return <LogsPanel key={panel.id} panelId={panel.id} title={panel.title} logs={logs} />;
       case "piechart":
+        if (panel.options.queryResult) {
+          return (
+            <PieChartPanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+            />
+          );
+        }
         if (panel.options.csvPieData) {
           return (
             <PieChartPanel
@@ -267,7 +326,9 @@ function DashboardContent() {
                     className="grid grid-cols-12 gap-4 auto-rows-min"
                   >
                     {panels.map((panel, index) => {
-                      const heightClass = panel.gridPos.h <= 2 ? "h-36" : panel.gridPos.h <= 3 ? "h-72" : "h-80";
+                      // Calculate height based on gridPos.h (1 unit = 72px approx)
+                      // This allows for smoother resizing
+                      const heightStyle = { height: `${Math.max(panel.gridPos.h * 72, 144)}px` };
                       
                       return (
                         <Draggable 
@@ -288,9 +349,13 @@ function DashboardContent() {
                                 panel.gridPos.w === 6 && "lg:col-span-6",
                                 panel.gridPos.w === 8 && "lg:col-span-8",
                                 panel.gridPos.w === 12 && "col-span-12",
-                                heightClass,
+                                // Use dynamic style instead of fixed classes
                                 snapshot.isDragging && "ring-2 ring-primary shadow-lg z-50"
                               )}
+                              style={{
+                                ...provided.draggableProps.style,
+                                ...heightStyle
+                              }}
                             >
                               <PanelWrapper panel={panel}>
                                 {renderPanel(panel)}
