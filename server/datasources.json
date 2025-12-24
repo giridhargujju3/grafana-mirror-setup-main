@@ -9,5 +9,16 @@
     "sslMode": "disable",
     "maxOpenConns": 10,
     "id": "ds-1766489644311"
+  },
+  {
+    "name": "grafana-panel",
+    "type": "postgres",
+    "url": "postgresql://postgres:root@localhost:5432/grafana",
+    "database": "grafana",
+    "user": "postgres",
+    "password": "root",
+    "sslMode": "disable",
+    "maxOpenConns": 10,
+    "id": "ds-1766560501878"
   }
 ]

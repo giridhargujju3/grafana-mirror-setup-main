@@ -94,25 +94,25 @@ function DashboardsContent() {
           {draftDashboards.length > 0 && (
             <section className="mb-8">
               <h2 className="flex items-center gap-2 text-lg font-medium text-foreground mb-4">
-                <LayoutDashboard size={20} className="text-grafana-orange" />
+                <LayoutDashboard size={20} className="text-primary" />
                 Unsaved dashboards
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 {draftDashboards.map((dashboard) => (
                   <div
                     key={dashboard.id}
-                    className="flex items-center gap-3 p-4 bg-card border border-grafana-orange/50 rounded-lg hover:border-grafana-orange transition-colors"
+                    className="flex items-center gap-3 p-4 bg-card border border-primary/50 rounded-lg hover:border-primary transition-colors"
                   >
                     <button
                       onClick={() => handleOpenDashboard(dashboard)}
                       className="flex items-center gap-3 flex-1 text-left"
                     >
-                      <div className="p-2 bg-grafana-orange/20 rounded">
-                        <LayoutDashboard size={20} className="text-grafana-orange" />
+                      <div className="p-2 bg-primary/20 rounded">
+                        <LayoutDashboard size={20} className="text-primary" />
                       </div>
                       <div>
                         <div className="font-medium text-foreground">{dashboard.title}</div>
-                        <div className="text-xs text-grafana-orange">Unsaved draft</div>
+                        <div className="text-xs text-primary">Unsaved draft</div>
                       </div>
                     </button>
                     <button
@@ -183,7 +183,7 @@ function DashboardsContent() {
                             <LayoutDashboard size={18} className="text-muted-foreground" />
                             <span className="font-medium text-foreground">{dashboard.title}</span>
                             {dashboard.isDirty && (
-                              <span className="text-xs text-grafana-orange">*unsaved</span>
+                              <span className="text-xs text-primary">*unsaved</span>
                             )}
                           </div>
                         </td>
