@@ -19,7 +19,7 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:8080'],
+  origin: true, // Allow all origins (reflects the request origin)
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));

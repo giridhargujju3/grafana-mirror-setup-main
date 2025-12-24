@@ -17,7 +17,9 @@ export interface QueryResult {
   rowCount: number;
 }
 
-const API_BASE = 'http://localhost:3001/api';
+import { API_BASE_URL } from './api';
+
+const API_BASE = API_BASE_URL;
 
 export class PostgreSQLDataSource {
   private config: PostgreSQLConfig;

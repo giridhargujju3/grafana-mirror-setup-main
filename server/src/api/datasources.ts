@@ -1,11 +1,52 @@
 import { Router, Request, Response } from 'express';
 import { postgresService } from '../services/postgresService';
 import { DataSourceConfig } from '../types/datasource';
+import fs from 'fs';
+import path from 'path';
 
 const router = Router();
+const DATA_FILE = path.join(__dirname, '../../datasources.json');
 
 // Store data sources in memory (in production, use database)
 const dataSources: Map<string, DataSourceConfig> = new Map();
+
+// Load data sources from file on startup
+const loadDataSources = async () => {
+  try {
+    if (fs.existsSync(DATA_FILE)) {
+      const data = fs.readFileSync(DATA_FILE, 'utf8');
+      const sources: DataSourceConfig[] = JSON.parse(data);
+      
+      for (const source of sources) {
+        dataSources.set(source.id, source);
+        // Re-establish connection
+        try {
+          await postgresService.addDataSource(source);
+          console.log(`Restored connection for data source: ${source.name}`);
+        } catch (err) {
+          console.error(`Failed to restore connection for ${source.name}:`, err);
+        }
+      }
+      console.log(`Loaded ${sources.length} data sources from disk`);
+    }
+  } catch (error) {
+    console.error('Failed to load data sources:', error);
+  }
+};
+
+// Save data sources to file
+const saveDataSources = () => {
+  try {
+    const sources = Array.from(dataSources.values());
+    fs.writeFileSync(DATA_FILE, JSON.stringify(sources, null, 2));
+    console.log('Data sources saved to disk');
+  } catch (error) {
+    console.error('Failed to save data sources:', error);
+  }
+};
+
+// Initialize
+loadDataSources();
 
 // GET /api/datasources - List all data sources
 router.get('/', (req: Request, res: Response) => {
@@ -36,6 +77,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Save data source
     dataSources.set(config.id, config);
+    saveDataSources();
     
     // Add to PostgreSQL service for query execution
     await postgresService.addDataSource(config);
@@ -96,6 +138,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     // Update data source
     dataSources.set(config.id, config);
+    saveDataSources();
     await postgresService.addDataSource(config);
 
     res.json(config);
@@ -118,6 +161,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     await postgresService.removeDataSource(id);
     dataSources.delete(id);
+    saveDataSources();
 
     res.status(204).send();
   } catch (error) {

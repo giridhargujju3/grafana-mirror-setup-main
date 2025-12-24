@@ -1,0 +1,13 @@
+[
+  {
+    "name": "generaldemo",
+    "type": "postgres",
+    "url": "postgresql://postgres:root@localhost:5432/copilot",
+    "database": "copilot",
+    "user": "postgres",
+    "password": "root",
+    "sslMode": "disable",
+    "maxOpenConns": 10,
+    "id": "ds-1766489644311"
+  }
+]

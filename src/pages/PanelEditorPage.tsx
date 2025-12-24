@@ -39,7 +39,7 @@ function PanelEditorContent() {
     
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/query/test', {
+      const response = await fetch(`${API_BASE_URL}/query/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

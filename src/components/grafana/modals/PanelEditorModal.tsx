@@ -15,7 +15,7 @@ import { BarChartPanel } from "../panels/BarChartPanel";
 import { TablePanel } from "../panels/TablePanel";
 import { PieChartPanel } from "../panels/PieChartPanel";
 import { AlertListPanel } from "../panels/AlertListPanel";
-import { LogsPanel } from "../panels/LogsPanel";
+import { API_BASE_URL } from "@/lib/api";
 
 const visualizationTypes = [
   { id: "timeseries", name: "Time series", icon: "📈" },
@@ -123,7 +123,7 @@ export function PanelEditorModal() {
 
     setIsRunning(true);
     try {
-      const response = await fetch('http://localhost:3001/api/query/test', {
+      const response = await fetch(`${API_BASE_URL}/query/test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -169,7 +169,7 @@ export function PanelEditorModal() {
     for (const query of queries) {
       if (query.expr?.trim()) {
         try {
-          const response = await fetch('http://localhost:3001/api/query/test', {
+          const response = await fetch(`${API_BASE_URL}/query/test`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
