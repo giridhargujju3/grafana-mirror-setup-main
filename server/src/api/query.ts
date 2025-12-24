@@ -26,13 +26,13 @@ router.post('/', async (req: Request, res: Response) => {
     // Check if any datasources are configured
     const availableConnections = postgresService.getConnectionIds();
     if (availableConnections.length === 0) {
-      return res.status(400).json({
-        error: 'No data sources configured. Please add a PostgreSQL data source first.'
+      return res.status(400).json({ 
+        error: 'No data sources configured. Please add a PostgreSQL data source first.' 
       });
     }
 
     const results = [];
-
+    
     for (const query of queryRequest.queries) {
       try {
         const dataFrame = await postgresService.executeQuery(query.datasource, query);
@@ -54,9 +54,9 @@ router.post('/', async (req: Request, res: Response) => {
 
     res.json(response);
   } catch (error) {
-    res.status(500).json({
-      error: 'Query execution failed',
-      message: error instanceof Error ? error.message : 'Unknown error'
+    res.status(500).json({ 
+      error: 'Query execution failed', 
+      message: error instanceof Error ? error.message : 'Unknown error' 
     });
   }
 });
@@ -70,7 +70,7 @@ router.post('/test', async (req: Request, res: Response) => {
     if (!datasource || !query) {
       console.log('Missing datasource or query:', { datasource, query });
       return res.status(400).json({ 
-        success: false,
+        success: false, 
         error: 'Datasource and query are required' 
       });
     }
@@ -80,16 +80,16 @@ router.post('/test', async (req: Request, res: Response) => {
     console.log('Available connections:', availableConnections);
     
     if (availableConnections.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'No data sources configured. Please add a PostgreSQL data source first.'
+      return res.status(400).json({ 
+        success: false, 
+        error: 'No data sources configured. Please add a PostgreSQL data source first.' 
       });
     }
-    
+
     if (!availableConnections.includes(datasource)) {
-      return res.status(400).json({
-        success: false,
-        error: `Data source '${datasource}' not found. Available: ${availableConnections.join(', ')}`
+      return res.status(400).json({ 
+        success: false, 
+        error: `Data source '${datasource}' not found. Available: ${availableConnections.join(', ')}` 
       });
     }
 
@@ -103,26 +103,26 @@ router.post('/test', async (req: Request, res: Response) => {
     console.log('Executing query:', testQuery);
     const result = await postgresService.executeQuery(datasource, testQuery);
     console.log('Query result:', result);
-    
+
     // Transform result to match frontend expectations
     const transformedResult = {
       columns: result.fields.map(f => f.name),
-      rows: [],
+      rows: [] as any[][],
       rowCount: result.length
     };
-    
+
     // Transform field data to rows
     for (let i = 0; i < result.length; i++) {
       const row = result.fields.map(field => field.values[i]);
       transformedResult.rows.push(row);
     }
-    
+
     res.json({ success: true, data: transformedResult });
   } catch (error) {
     console.error('Query test error:', error);
-    res.status(400).json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Query test failed'
+    res.status(400).json({ 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Query test failed' 
     });
   }
 });

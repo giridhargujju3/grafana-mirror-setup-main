@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Key Management</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .form-group { margin: 15px 0; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; }
+        input, select, button { padding: 8px; margin: 5px 0; }
+        button { background: #007bff; color: white; border: none; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .api-key { background: #f8f9fa; padding: 10px; border: 1px solid #ddd; margin: 10px 0; }
+        .key-value { font-family: monospace; background: #e9ecef; padding: 5px; word-break: break-all; }
+    </style>
+</head>
+<body>
+    <h1>API Key Management</h1>
+    
+    <div>
+        <h2>Create New API Key</h2>
+        <div class="form-group">
+            <label>Name:</label>
+            <input type="text" id="keyName" placeholder="My Dashboard API">
+        </div>
+        <div class="form-group">
+            <label>Role:</label>
+            <select id="keyRole">
+                <option value="Viewer">Viewer</option>
+                <option value="Editor" selected>Editor</option>
+                <option value="Admin">Admin</option>
+            </select>
+        </div>
+        <button onclick="createApiKey()">Create API Key</button>
+    </div>
+
+    <div>
+        <h2>Existing API Keys</h2>
+        <button onclick="loadApiKeys()">Refresh List</button>
+        <div id="apiKeysList"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+
+        async function createApiKey() {
+            const name = document.getElementById('keyName').value;
+            const role = document.getElementById('keyRole').value;
+
+            if (!name) {
+                alert('Please enter a name for the API key');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/keys`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, role })
+                });
+
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`API Key Created!\n\nKey: ${result.key}\n\nSave this key - it won't be shown again!`);
+                    document.getElementById('keyName').value = '';
+                    loadApiKeys();
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        async function loadApiKeys() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/keys`);
+                const keys = await response.json();
+                
+                const container = document.getElementById('apiKeysList');
+                container.innerHTML = keys.map(key => `
+                    <div class="api-key">
+                        <strong>${key.name}</strong> (${key.role})
+                        <br>Created: ${new Date(key.created).toLocaleString()}
+                        ${key.lastUsed ? `<br>Last Used: ${new Date(key.lastUsed).toLocaleString()}` : ''}
+                        <br><button onclick="deleteApiKey('${key.id}')">Delete</button>
+                    </div>
+                `).join('');
+            } catch (error) {
+                document.getElementById('apiKeysList').innerHTML = `<p>Error loading keys: ${error.message}</p>`;
+            }
+        }
+
+        async function deleteApiKey(id) {
+            if (!confirm('Are you sure you want to delete this API key?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/keys/${id}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadApiKeys();
+                } else {
+                    alert('Error deleting API key');
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+
+        // Load keys on page load
+        loadApiKeys();
+    </script>
+</body>
+</html>

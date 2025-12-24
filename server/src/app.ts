@@ -7,6 +7,8 @@ import dotenv from 'dotenv';
 
 import datasourcesRouter from './api/datasources';
 import queryRouter from './api/query';
+import authRouter from './api/auth';
+import dashboardsRouter from './api/dashboards';
 
 // Load environment variables
 dotenv.config();
@@ -19,7 +21,7 @@ app.use(helmet());
 app.use(compression());
 app.use(morgan('combined'));
 app.use(cors({
-  origin: true, // Allow all origins (reflects the request origin)
+  origin: ['http://localhost:3000', 'http://localhost:8080'],
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -34,9 +36,16 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// Serve API keys management page
+app.get('/api-keys.html', (req, res) => {
+  res.sendFile('api-keys.html', { root: './public' });
+});
+
 // API routes
 app.use('/api/datasources', datasourcesRouter);
 app.use('/api/query', queryRouter);
+app.use('/api/auth', authRouter);
+app.use('/api/dashboards', dashboardsRouter);
 
 // Error handling middleware
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
@@ -57,6 +66,8 @@ app.listen(PORT, () => {
   console.log(`🚀 Grafana Mirror Backend running on port ${PORT}`);
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🔌 Data sources: http://localhost:${PORT}/api/datasources`);
+  console.log(`🔑 API keys: http://localhost:${PORT}/api/auth/keys`);
+  console.log(`📋 Dashboards: http://localhost:${PORT}/api/dashboards`);
 });
 
 export default app;

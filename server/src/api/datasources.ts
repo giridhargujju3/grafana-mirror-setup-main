@@ -1,51 +1,59 @@
 import { Router, Request, Response } from 'express';
 import { postgresService } from '../services/postgresService';
 import { DataSourceConfig } from '../types/datasource';
-import fs from 'fs';
+import fs from 'fs/promises';
 import path from 'path';
 
 const router = Router();
-const DATA_FILE = path.join(__dirname, '../../datasources.json');
 
-// Store data sources in memory (in production, use database)
+// Persistent storage for data sources
+const storageFile = path.join(process.cwd(), 'data', 'datasources.json');
 const dataSources: Map<string, DataSourceConfig> = new Map();
 
-// Load data sources from file on startup
+// Load datasources from file
 const loadDataSources = async () => {
   try {
-    if (fs.existsSync(DATA_FILE)) {
-      const data = fs.readFileSync(DATA_FILE, 'utf8');
-      const sources: DataSourceConfig[] = JSON.parse(data);
-      
-      for (const source of sources) {
-        dataSources.set(source.id, source);
-        // Re-establish connection
-        try {
-          await postgresService.addDataSource(source);
-          console.log(`Restored connection for data source: ${source.name}`);
-        } catch (err) {
-          console.error(`Failed to restore connection for ${source.name}:`, err);
-        }
-      }
-      console.log(`Loaded ${sources.length} data sources from disk`);
+    const dataDir = path.dirname(storageFile);
+    try {
+      await fs.access(dataDir);
+    } catch {
+      await fs.mkdir(dataDir, { recursive: true });
     }
+
+    const data = await fs.readFile(storageFile, 'utf-8');
+    const sources: DataSourceConfig[] = JSON.parse(data);
+    
+    sources.forEach(source => {
+      dataSources.set(source.id, source);
+      postgresService.addDataSource(source).catch(console.error);
+    });
+    console.log(`✅ Loaded ${sources.length} datasources from storage`);
   } catch (error) {
-    console.error('Failed to load data sources:', error);
+    if ((error as any).code !== 'ENOENT') {
+      console.error('Error loading datasources:', error);
+    }
+    console.log('📝 Starting with empty datasources storage');
   }
 };
 
-// Save data sources to file
-const saveDataSources = () => {
+// Save datasources to file
+const saveDataSources = async () => {
   try {
+    const dataDir = path.dirname(storageFile);
+    try {
+      await fs.access(dataDir);
+    } catch {
+      await fs.mkdir(dataDir, { recursive: true });
+    }
+
     const sources = Array.from(dataSources.values());
-    fs.writeFileSync(DATA_FILE, JSON.stringify(sources, null, 2));
-    console.log('Data sources saved to disk');
+    await fs.writeFile(storageFile, JSON.stringify(sources, null, 2));
   } catch (error) {
-    console.error('Failed to save data sources:', error);
+    console.error('Error saving datasources:', error);
   }
 };
 
-// Initialize
+// Initialize storage
 loadDataSources();
 
 // GET /api/datasources - List all data sources
@@ -77,7 +85,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     // Save data source
     dataSources.set(config.id, config);
-    saveDataSources();
+    await saveDataSources();
     
     // Add to PostgreSQL service for query execution
     await postgresService.addDataSource(config);
@@ -138,7 +146,7 @@ router.put('/:id', async (req: Request, res: Response) => {
 
     // Update data source
     dataSources.set(config.id, config);
-    saveDataSources();
+    await saveDataSources();
     await postgresService.addDataSource(config);
 
     res.json(config);
@@ -161,7 +169,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
 
     await postgresService.removeDataSource(id);
     dataSources.delete(id);
-    saveDataSources();
+    await saveDataSources();
 
     res.status(204).send();
   } catch (error) {
