@@ -37,14 +37,38 @@ export function GaugePanel({
     const { columns, rows } = queryResult;
     if (rows.length > 0) {
       // Find first numeric column
+      // We look for a column that is numeric and NOT "time"
       let valIndex = -1;
-      const firstRow = rows[0];
-      valIndex = firstRow.findIndex((val: any) => typeof val === 'number');
+      
+      // Check column definitions or data types
+      for (let i = 0; i < columns.length; i++) {
+        const colName = columns[i].toLowerCase();
+        // Skip time/date columns
+        if (colName.includes('time') || colName.includes('date')) continue;
+        
+        // Check first non-null value in this column
+        const validRow = rows.find(r => r[i] !== null && r[i] !== undefined);
+        if (validRow && typeof validRow[i] === 'number') {
+          valIndex = i;
+          break;
+        }
+      }
+      
+      // Fallback: if no numeric column found excluding time, try ANY numeric column
+      if (valIndex === -1) {
+        valIndex = rows[0].findIndex((val: any) => typeof val === 'number');
+      }
+      
+      // Fallback: last column
       if (valIndex === -1) valIndex = columns.length - 1;
 
-      // Use last row value
+      // Use last row value (latest data)
       const lastRow = rows[rows.length - 1];
-      value = Number(lastRow[valIndex]) || 0;
+      const possibleValue = Number(lastRow[valIndex]);
+      
+      if (!isNaN(possibleValue)) {
+        value = possibleValue;
+      }
     }
   }
 

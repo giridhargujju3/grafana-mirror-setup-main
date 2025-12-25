@@ -65,10 +65,28 @@ export function GrafanaSidebar() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [movingDashboard, setMovingDashboard] = useState<any>(null);
   const [savedDashboards, setSavedDashboards] = useState<any[]>([]);
+  const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Load saved dashboards from localStorage
+  // Handle mobile detection and auto-collapse
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobileView = window.innerWidth < 768;
+      setIsMobile(isMobileView);
+      if (isMobileView && !sidebarCollapsed) {
+        setSidebarCollapsed(true);
+      }
+    };
+    
+    // Initial check
+    handleResize();
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []); // Remove sidebarCollapsed dependency to avoid infinite loop
+
+  // ... rest of existing useEffects ...
   useEffect(() => {
     const loadSavedDashboards = () => {
       try {
@@ -264,8 +282,9 @@ export function GrafanaSidebar() {
   return (
     <aside
       className={cn(
-        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 flex-shrink-0",
-        sidebarCollapsed ? "w-16" : "w-64"
+        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 flex-shrink-0 z-50",
+        sidebarCollapsed ? "w-16" : "w-64",
+        isMobile && !sidebarCollapsed && "fixed inset-y-0 left-0 shadow-2xl"
       )}
     >
       {/* Logo */}

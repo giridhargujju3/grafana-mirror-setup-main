@@ -127,4 +127,80 @@ router.post('/db', requireRole(['Admin', 'Editor']), (req: Request, res: Respons
   }
 });
 
+// DELETE /api/dashboards/uid/:uid - Delete dashboard
+router.delete('/uid/:uid', requireRole(['Admin', 'Editor']), (req: Request, res: Response) => {
+  try {
+    const uid = req.params.uid;
+    const dashboard = Array.from(dashboards.values()).find(d => d.uid === uid);
+    
+    if (!dashboard) {
+      return res.status(404).json({ error: 'Dashboard not found' });
+    }
+
+    dashboards.delete(uid);
+    
+    res.json({
+      title: dashboard.title,
+      message: 'Dashboard deleted',
+      id: dashboard.id
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Failed to delete dashboard', 
+      message: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+});
+
+// GET /api/search - Search dashboards
+router.get('/search', requireRole(['Admin', 'Editor', 'Viewer']), (req: Request, res: Response) => {
+  try {
+    const { query, tag, type, dashboardIds, folderIds, starred, limit } = req.query;
+    
+    let results = Array.from(dashboards.values());
+    
+    // Filter by query
+    if (query) {
+      const searchTerm = (query as string).toLowerCase();
+      results = results.filter(d => 
+        d.title?.toLowerCase().includes(searchTerm) ||
+        d.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm))
+      );
+    }
+    
+    // Filter by tag
+    if (tag) {
+      results = results.filter(d => d.tags?.includes(tag));
+    }
+    
+    // Apply limit
+    if (limit) {
+      results = results.slice(0, parseInt(limit as string));
+    }
+    
+    const searchResults = results.map(dashboard => ({
+      id: dashboard.id,
+      uid: dashboard.uid,
+      title: dashboard.title,
+      uri: `db/${dashboard.slug}`,
+      url: `/d/${dashboard.uid}/${dashboard.slug}`,
+      slug: dashboard.slug,
+      type: 'dash-db',
+      tags: dashboard.tags || [],
+      isStarred: false,
+      folderId: dashboard.folderId || 0,
+      folderUid: dashboard.folderUid || '',
+      folderTitle: dashboard.folderTitle || '',
+      folderUrl: dashboard.folderUrl || ''
+    }));
+
+    res.json(searchResults);
+  } catch (error) {
+    res.status(500).json({ 
+      error: 'Search failed', 
+      message: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+});
+
 export default router;

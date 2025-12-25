@@ -21,6 +21,8 @@ import { TablePanel } from "./panels/TablePanel";
 import { AlertListPanel } from "./panels/AlertListPanel";
 import { LogsPanel } from "./panels/LogsPanel";
 import { PieChartPanel } from "./panels/PieChartPanel";
+import { HistogramPanel } from "./panels/HistogramPanel";
+import { XYChartPanel } from "./panels/XYChartPanel";
 import { PanelWrapper } from "./PanelWrapper";
 import { EmptyDashboardState } from "./EmptyDashboardState";
 import { DashboardProvider, useDashboard, PanelConfig } from "@/contexts/DashboardContext";
@@ -293,6 +295,52 @@ function DashboardContent() {
             panelId={panel.id}
             title={panel.title}
             data={requestsData.map(item => ({ name: item.name, value: item.requests }))}
+          />
+        );
+      case "histogram":
+        if (panel.options.queryResult) {
+          return (
+            <HistogramPanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+            />
+          );
+        }
+        return (
+          <HistogramPanel
+            key={panel.id}
+            panelId={panel.id}
+            title={panel.title}
+            data={timeSeriesData}
+            dataKeys={[
+              { key: "cpu", color: "hsl(24, 100%, 50%)", name: "CPU %" },
+              { key: "memory", color: "hsl(199, 89%, 48%)", name: "Memory %" },
+            ]}
+          />
+        );
+      case "xychart":
+        if (panel.options.queryResult) {
+          return (
+            <XYChartPanel
+              key={panel.id}
+              panelId={panel.id}
+              title={panel.title}
+              queryResult={panel.options.queryResult}
+            />
+          );
+        }
+        return (
+          <XYChartPanel
+            key={panel.id}
+            panelId={panel.id}
+            title={panel.title}
+            data={timeSeriesData}
+            dataKeys={[
+              { key: "cpu", color: "hsl(24, 100%, 50%)", name: "CPU %" },
+              { key: "memory", color: "hsl(199, 89%, 48%)", name: "Memory %" },
+            ]}
           />
         );
       default:

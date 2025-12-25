@@ -177,11 +177,11 @@ function AdminContent() {
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 md:p-6">
             {activeTab === "Users" && (
               <>
-                <div className="flex items-center justify-between mb-6">
-                  <div className="relative max-w-md flex-1">
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+                  <div className="relative w-full max-w-md flex-1">
                     <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                     <input
                       type="text"
@@ -193,15 +193,15 @@ function AdminContent() {
                   </div>
                   <button
                     onClick={() => toast.success("Invite user dialog opened")}
-                    className="grafana-btn grafana-btn-primary"
+                    className="grafana-btn grafana-btn-primary w-full md:w-auto justify-center"
                   >
                     <Plus size={16} />
                     Invite user
                   </button>
                 </div>
 
-                <div className="bg-card border border-border rounded-lg overflow-hidden">
-                  <table className="w-full">
+                <div className="bg-card border border-border rounded-lg overflow-x-auto">
+                  <table className="w-full min-w-[800px]">
                     <thead className="bg-secondary">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wide">User</th>

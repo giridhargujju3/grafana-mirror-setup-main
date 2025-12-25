@@ -15,6 +15,8 @@ import { BarChartPanel } from "../panels/BarChartPanel";
 import { TablePanel } from "../panels/TablePanel";
 import { PieChartPanel } from "../panels/PieChartPanel";
 import { AlertListPanel } from "../panels/AlertListPanel";
+import { HistogramPanel } from "../panels/HistogramPanel";
+import { XYChartPanel } from "../panels/XYChartPanel";
 import { API_BASE_URL } from "@/lib/api";
 
 const visualizationTypes = [
@@ -27,6 +29,8 @@ const visualizationTypes = [
   { id: "alertlist", name: "Alert list", icon: "🚨" },
   { id: "logs", name: "Logs", icon: "📝" },
   { id: "text", name: "Text", icon: "📄" },
+  { id: "histogram", name: "Histogram", icon: "📊" },
+  { id: "xychart", name: "XY Chart", icon: "📉" },
 ];
 
 const CHART_COLORS = [
@@ -390,6 +394,28 @@ export function PanelEditorModal() {
             alerts={[
               { name: "High CPU", state: "firing", severity: "critical", message: "CPU > 90%", time: "2m ago" },
               { name: "Memory Warning", state: "pending", severity: "warning", message: "Memory > 80%", time: "5m ago" },
+            ]}
+          />
+        );
+      case "histogram":
+        return (
+          <HistogramPanel
+            {...commonProps}
+            data={previewData}
+            dataKeys={[
+              { key: "value", color: CHART_COLORS[0], name: "Value" },
+              { key: "value2", color: CHART_COLORS[1], name: "Value 2" },
+            ]}
+          />
+        );
+      case "xychart":
+        return (
+          <XYChartPanel
+            {...commonProps}
+            data={previewData}
+            dataKeys={[
+              { key: "value", color: CHART_COLORS[0], name: "Value" },
+              { key: "value2", color: CHART_COLORS[1], name: "Value 2" },
             ]}
           />
         );
@@ -822,7 +848,7 @@ export function PanelEditorModal() {
                 <h3 className="font-medium text-foreground mb-3">Visualization</h3>
                 
                 {/* Visualization type grid */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 max-h-[240px] overflow-y-auto pr-1">
                   {visualizationTypes.map((viz) => (
                     <button
                       key={viz.id}
