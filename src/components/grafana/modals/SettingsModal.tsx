@@ -1,4 +1,4 @@
-import { X, Save } from "lucide-react";
+import { X, Save, Copy, Link2, Check } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { toast } from "sonner";
 import { useState } from "react";
@@ -7,13 +7,15 @@ import { cn } from "@/lib/utils";
 const tabs = ["General", "Annotations", "Variables", "Links", "JSON Model"];
 
 export function SettingsModal() {
-  const { showSettingsModal, setShowSettingsModal, dashboardTitle, setDashboardTitle } = useDashboard();
+  const { showSettingsModal, setShowSettingsModal, dashboardTitle, setDashboardTitle, panels } = useDashboard();
   const [activeTab, setActiveTab] = useState("General");
   const [localTitle, setLocalTitle] = useState(dashboardTitle);
   const [description, setDescription] = useState("");
   const [tags, setTags] = useState<string[]>(["production", "monitoring"]);
   const [folder, setFolder] = useState("General");
   const [editable, setEditable] = useState(true);
+  const [shareLink, setShareLink] = useState("");
+  const [copied, setCopied] = useState(false);
 
   if (!showSettingsModal) return null;
 
@@ -32,6 +34,39 @@ export function SettingsModal() {
 
   const handleRemoveTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleGenerateShareLink = () => {
+    const dashboardData = {
+      title: localTitle,
+      description,
+      tags,
+      panels,
+      folder,
+      editable
+    };
+    
+    // Encode dashboard to base64
+    const jsonString = JSON.stringify(dashboardData);
+    const base64Data = btoa(unescape(encodeURIComponent(jsonString)));
+    
+    // Generate share link
+    const baseUrl = window.location.origin;
+    const link = `${baseUrl}/import-dashboard?data=${base64Data}`;
+    
+    setShareLink(link);
+    toast.success("Share link generated!");
+  };
+
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      setCopied(true);
+      toast.success("Link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2000);
+    } catch (error) {
+      toast.error("Failed to copy link");
+    }
   };
 
   return (
@@ -183,13 +218,70 @@ export function SettingsModal() {
           )}
 
           {activeTab === "Links" && (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Dashboard links allow you to place links to other dashboards and websites directly below the dashboard header.
-              </p>
-              <button className="grafana-btn grafana-btn-secondary">
-                Add dashboard link
-              </button>
+            <div className="space-y-6">
+              {/* Generate Share Link Section */}
+              <div className="border border-border rounded-lg p-4 bg-secondary/20">
+                <div className="flex items-center gap-2 mb-3">
+                  <Link2 size={18} className="text-primary" />
+                  <h3 className="text-sm font-semibold text-foreground">Generate Dashboard Share Link</h3>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Create a shareable link that contains your entire dashboard configuration. Others can import this dashboard by pasting the link.
+                </p>
+                
+                {!shareLink ? (
+                  <button 
+                    onClick={handleGenerateShareLink}
+                    className="grafana-btn grafana-btn-primary"
+                  >
+                    <Link2 size={16} />
+                    Generate Share Link
+                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={shareLink}
+                        readOnly
+                        className="flex-1 grafana-input text-xs font-mono"
+                      />
+                      <button
+                        onClick={handleCopyLink}
+                        className="grafana-btn grafana-btn-secondary whitespace-nowrap"
+                      >
+                        {copied ? (
+                          <>
+                            <Check size={16} />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={16} />
+                            Copy Link
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    <button
+                      onClick={handleGenerateShareLink}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      Regenerate link
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Dashboard Links Section */}
+              <div>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Dashboard links allow you to place links to other dashboards and websites directly below the dashboard header.
+                </p>
+                <button className="grafana-btn grafana-btn-secondary">
+                  Add dashboard link
+                </button>
+              </div>
             </div>
           )}
 
