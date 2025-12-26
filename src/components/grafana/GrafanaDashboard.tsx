@@ -23,6 +23,9 @@ import { LogsPanel } from "./panels/LogsPanel";
 import { PieChartPanel } from "./panels/PieChartPanel";
 import { HistogramPanel } from "./panels/HistogramPanel";
 import { XYChartPanel } from "./panels/XYChartPanel";
+import { HeatmapPanel } from "./panels/HeatmapPanel";
+import { StatusHistoryPanel } from "./panels/StatusHistoryPanel";
+import { StateTimelinePanel } from "./panels/StateTimelinePanel";
 import { PanelWrapper } from "./PanelWrapper";
 import { EmptyDashboardState } from "./EmptyDashboardState";
 import { DashboardProvider, useDashboard, PanelConfig } from "@/contexts/DashboardContext";
@@ -357,6 +360,33 @@ function DashboardContent() {
               { key: "cpu", color: "hsl(24, 100%, 50%)", name: "CPU %" },
               { key: "memory", color: "hsl(199, 89%, 48%)", name: "Memory %" },
             ]}
+          />
+        );
+      case "heatmap":
+        return (
+          <HeatmapPanel
+            key={panel.id}
+            panelId={panel.id}
+            title={panel.title}
+            data={panel.options.heatmapData}
+          />
+        );
+      case "statushistory":
+        return (
+          <StatusHistoryPanel
+            key={panel.id}
+            panelId={panel.id}
+            title={panel.title}
+            data={panel.options.statusData}
+          />
+        );
+      case "statetimeline":
+        return (
+          <StateTimelinePanel
+            key={panel.id}
+            panelId={panel.id}
+            title={panel.title}
+            data={panel.options.timelineData}
           />
         );
       default:

@@ -131,9 +131,9 @@ export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesD
 
   const PanelContent = () => (
     <div className={cn(
-      "grafana-panel h-full flex flex-col", 
+      "grafana-panel h-full flex flex-col group", 
       isFullscreen && "fixed inset-4 z-50",
-      isEditMode && "cursor-pointer hover:ring-2 hover:ring-primary/50"
+      isEditMode && "cursor-pointer hover:ring-2 hover:ring-primary/50 hover:shadow-lg"
     )} >
       <div className="grafana-panel-header">
         <h3 className="grafana-panel-title">{title}</h3>
@@ -143,7 +143,7 @@ export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesD
               e.stopPropagation();
               setIsFullscreen(!isFullscreen);
             }}
-            className="p-1 rounded hover:bg-secondary/50 text-muted-foreground transition-colors"
+            className="p-1 rounded-md hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110"
             title={isFullscreen ? "Exit fullscreen" : "View fullscreen"}
           >
             {isFullscreen ? <X size={14} /> : <Maximize2 size={14} />}
@@ -154,12 +154,12 @@ export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesD
                 e.stopPropagation();
                 setShowMenu(!showMenu);
               }}
-              className="p-1 rounded hover:bg-secondary/50 text-muted-foreground transition-colors"
+              className="p-1 rounded-md hover:bg-secondary/50 text-muted-foreground hover:text-foreground transition-all duration-200 hover:scale-110"
             >
               <MoreVertical size={14} />
             </button>
             {showMenu && (
-              <div className="absolute top-full right-0 mt-1 w-40 bg-popover border border-border rounded-md shadow-lg z-50 py-1 animate-fade-in">
+              <div className="absolute top-full right-0 mt-1 w-40 bg-popover border border-border rounded-md shadow-xl z-50 py-1 animate-scale-in backdrop-blur-panel">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -208,33 +208,44 @@ export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesD
             <defs>
               {chartKeys.map((dk) => (
                 <linearGradient key={dk.key} id={`gradient-${dk.key}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={dk.color} stopOpacity={0.4} />
-                  <stop offset="100%" stopColor={dk.color} stopOpacity={0.05} />
+                  <stop offset="0%" stopColor={dk.color} stopOpacity={0.5} />
+                  <stop offset="50%" stopColor={dk.color} stopOpacity={0.15} />
+                  <stop offset="100%" stopColor={dk.color} stopOpacity={0.02} />
                 </linearGradient>
               ))}
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="hsl(220, 18%, 22%)" vertical={false} />
+            <CartesianGrid 
+              strokeDasharray="3 3" 
+              stroke="hsl(220, 18%, 22%)" 
+              vertical={false}
+              strokeOpacity={0.5}
+            />
             <XAxis
               dataKey={timeColumn || "time"}
-              stroke="hsl(210, 15%, 55%)"
+              stroke="hsl(210, 15%, 60%)"
               fontSize={11}
               tickLine={false}
-              axisLine={false}
+              axisLine={{stroke: "hsl(220, 18%, 22%)"}}
+              tick={{fill: "hsl(210, 15%, 60%)"}}
             />
             <YAxis
-              stroke="hsl(210, 15%, 55%)"
+              stroke="hsl(210, 15%, 60%)"
               fontSize={11}
               tickLine={false}
-              axisLine={false}
+              axisLine={{stroke: "hsl(220, 18%, 22%)"}}
+              tick={{fill: "hsl(210, 15%, 60%)"}}
               tickFormatter={(value) => `${value}%`}
             />
             <Tooltip
               contentStyle={{
-                backgroundColor: "hsl(220, 18%, 15%)",
-                border: "1px solid hsl(220, 18%, 22%)",
+                backgroundColor: "rgba(17, 18, 23, 0.95)",
+                border: "1px solid hsl(220, 18%, 25%)",
                 borderRadius: "6px",
                 fontSize: "12px",
+                boxShadow: "0 4px 12px rgba(0, 0, 0, 0.5)",
+                backdropFilter: "blur(8px)"
               }}
+              cursor={{stroke: "hsl(210, 15%, 60%)", strokeWidth: 1, strokeDasharray: "4 4"}}
             />
             <Legend
               wrapperStyle={{ fontSize: "12px", paddingTop: "10px" }}
@@ -248,9 +259,10 @@ export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesD
                 dataKey={dk.key}
                 name={dk.name}
                 stroke={dk.color}
-                strokeWidth={2}
+                strokeWidth={2.5}
                 fill={`url(#gradient-${dk.key})`}
                 hide={hiddenSeries.includes(dk.key)}
+                activeDot={{r: 4, strokeWidth: 2, fill: dk.color}}
               />
             ))}
           </AreaChart>

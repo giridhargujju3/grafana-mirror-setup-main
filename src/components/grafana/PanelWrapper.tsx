@@ -24,8 +24,11 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
   const [showMenu, setShowMenu] = useState(false);
   const [showMoveMenu, setShowMoveMenu] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const [isResizing, setIsResizing] = useState(false);
   
   const panelRef = useRef<HTMLDivElement>(null);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
   const resizeRef = useRef({ 
     startX: 0, 
     startY: 0, 
@@ -34,7 +37,8 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
     initialGridW: 0, 
     initialGridH: 0,
     gridX: 0,
-    gridY: 0
+    gridY: 0,
+    lastUpdateTime: 0
   });
 
   const handleEdit = () => {
@@ -72,6 +76,7 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
     
     if (!panelRef.current) return;
 
+    setIsResizing(true);
     const rect = panelRef.current.getBoundingClientRect();
     
     resizeRef.current = {
@@ -90,33 +95,59 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
   };
 
   const handleResizeMove = (e: MouseEvent) => {
-    const { startX, startY, startW, initialGridW, initialGridH, gridX, gridY } = resizeRef.current;
-    const deltaX = e.clientX - startX;
-    const deltaY = e.clientY - startY;
-
-    // Calculate new grid width
-    // We know current pixel width corresponds to initialGridW
-    // So pixels per column = startW / initialGridW
-    // Avoid division by zero
-    const pixelsPerCol = initialGridW > 0 ? startW / initialGridW : 100;
-    const colDelta = Math.round(deltaX / pixelsPerCol);
-    const newGridW = Math.max(2, Math.min(12, initialGridW + colDelta)); // Min 2 cols, max 12
-
-    // Calculate new grid height
-    // We assumed 1 unit = 72px in GrafanaDashboard.tsx
-    const pixelsPerRow = 72;
-    const rowDelta = Math.round(deltaY / pixelsPerRow);
-    const newGridH = Math.max(2, initialGridH + rowDelta); // Min 2 rows
-
-    // Only update if changed
-    if (newGridW !== panel.gridPos.w || newGridH !== panel.gridPos.h) {
-       updatePanel(panel.id, { 
-         gridPos: { x: gridX, y: gridY, w: newGridW, h: newGridH } 
-       });
+    if (!panelRef.current) return;
+    
+    // Cancel any pending animation frame
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
     }
+
+    // Use requestAnimationFrame for smooth updates
+    animationFrameRef.current = requestAnimationFrame(() => {
+      if (!panelRef.current) return;
+      
+      const { startX, startY, startW, initialGridW, initialGridH, gridX, gridY, lastUpdateTime } = resizeRef.current;
+      const deltaX = e.clientX - startX;
+      const deltaY = e.clientY - startY;
+
+      // Calculate new grid width
+      const pixelsPerCol = initialGridW > 0 ? startW / initialGridW : 100;
+      const colDelta = Math.round(deltaX / pixelsPerCol);
+      const newGridW = Math.max(2, Math.min(12, initialGridW + colDelta));
+
+      // Calculate new grid height
+      const pixelsPerRow = 72;
+      const rowDelta = Math.round(deltaY / pixelsPerRow);
+      const newGridH = Math.max(2, initialGridH + rowDelta);
+
+      // Apply resize directly to element for instant visual feedback
+      const newHeight = newGridH * 72;
+      const newWidth = (newGridW / 12) * 100; // Convert grid width to percentage
+      
+      panelRef.current.style.height = `${newHeight}px`;
+      panelRef.current.style.width = `${newWidth}%`;
+
+      // Throttle state updates to every 50ms for performance
+      const now = Date.now();
+      if ((newGridW !== panel.gridPos.w || newGridH !== panel.gridPos.h) && (now - lastUpdateTime > 50)) {
+        resizeRef.current.lastUpdateTime = now;
+        updatePanel(panel.id, { 
+          gridPos: { x: gridX, y: gridY, w: newGridW, h: newGridH } 
+        });
+      }
+    });
   };
 
   const handleResizeEnd = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    if (panelRef.current) {
+      panelRef.current.style.height = '';
+      panelRef.current.style.width = '';
+    }
+    setIsResizing(false);
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', handleResizeEnd);
   };
@@ -124,6 +155,9 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
   // Cleanup listeners on unmount
   useEffect(() => {
     return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
       document.removeEventListener('mousemove', handleResizeMove);
       document.removeEventListener('mouseup', handleResizeEnd);
     };
@@ -154,21 +188,8 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
         ref={panelRef}
         className={cn(
           "h-full relative group",
-          isEditMode && "ring-2 ring-transparent hover:ring-primary/50 rounded-lg transition-all cursor-pointer"
+          isEditMode && "ring-2 ring-transparent hover:ring-primary/50 hover:shadow-lg rounded-lg transition-all duration-200"
         )}
-        onClick={(e) => {
-          // Don't trigger edit if clicking on a button, menu, or resize handle
-          const target = e.target as Element;
-          if (
-            isEditMode && 
-            !target.closest('.panel-menu') && 
-            !target.closest('.resize-handle') &&
-            !target.closest('button') &&
-            !target.closest('.panel-header-actions')
-          ) {
-            handleEdit();
-          }
-        }}
         onDoubleClick={(e) => {
           e.stopPropagation();
           toggleMaximize();
@@ -176,46 +197,99 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
       >
         {children}
         
-        {/* Resize Handle */}
-        {isEditMode && (
+        {/* Drag overlay - entire panel except resize corner */}
+        {isEditMode && !isResizing && (
           <div
-            className="resize-handle absolute bottom-0 right-0 w-6 h-6 cursor-se-resize z-50 flex items-end justify-end p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-            onMouseDown={handleResizeStart}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <svg width="8" height="8" viewBox="0 0 6 6" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground">
-              <path d="M6 1L1 6" />
-              <path d="M6 3.5L3.5 6" />
-            </svg>
-          </div>
+            {...dragHandleProps}
+            className="absolute cursor-grab active:cursor-grabbing"
+            style={{ 
+              top: 0,
+              left: 0,
+              right: '64px', // Exclude resize corner
+              bottom: '64px', // Exclude resize corner
+              zIndex: 1,
+              pointerEvents: 'auto'
+            }}
+          />
         )}
         
-        {/* Drag Handle */}
+        {/* Resize Handle - ONLY for resizing */}
         {isEditMode && (
-          <div 
-            {...dragHandleProps}
-            className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-10 bg-card/95 backdrop-blur border border-border rounded p-1 shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-            title="Drag to reorder"
+          <div
+            ref={resizeHandleRef}
+            className="resize-handle absolute bottom-0 right-0 w-16 h-16 flex items-end justify-end p-3"
+            style={{ 
+              cursor: 'se-resize !important',
+              zIndex: 10000,
+              background: 'transparent',
+              pointerEvents: 'auto',
+              touchAction: 'none',
+              userSelect: 'none'
+            }}
+            onMouseDown={(e) => {
+              e.nativeEvent.stopImmediatePropagation();
+              e.stopPropagation();
+              e.preventDefault();
+              handleResizeStart(e);
+            }}
+            onMouseMove={(e) => {
+              // Ensure cursor stays as resize
+              e.currentTarget.style.cursor = 'se-resize';
+            }}
+            onClick={(e) => {
+              e.nativeEvent.stopImmediatePropagation();
+              e.stopPropagation();
+              e.preventDefault();
+            }}
+            onDragStart={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }}
+            draggable={false}
           >
-            <GripVertical size={14} className="text-muted-foreground" />
+            <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+              <svg 
+                width="18" 
+                height="18" 
+                viewBox="0 0 6 6" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2.5" 
+                className="text-primary drop-shadow-lg"
+              >
+                <path d="M6 1L1 6" />
+                <path d="M6 3.5L3.5 6" />
+              </svg>
+            </div>
           </div>
         )}
         
         {/* Edit mode overlay */}
         {isEditMode && (
-          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity panel-menu z-10">
-            <div className="flex items-center gap-1 bg-card/95 backdrop-blur border border-border rounded-lg p-1 shadow-lg">
+          <div 
+            className="absolute top-2 right-2 panel-menu opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+            style={{ zIndex: 10000 }}
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-1 bg-card/95 backdrop-blur-sm border border-border rounded-lg p-1 shadow-xl animate-fade-in">
+              <button
+                onClick={(e) => { e.stopPropagation(); toggleMaximize(); }}
+                className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
+                title="Maximize panel"
+              >
+                <Maximize2 size={14} />
+              </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleEdit(); }}
-                className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
                 title="Edit panel"
               >
                 <Edit size={14} />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleDuplicate(); }}
-                className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
                 title="Duplicate panel"
               >
                 <Copy size={14} />
@@ -225,39 +299,39 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
               <div className="relative">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowMoveMenu(!showMoveMenu); }}
-                  className="p-1.5 rounded hover:bg-secondary text-muted-foreground hover:text-foreground transition-colors"
+                  className="p-1.5 rounded-md hover:bg-secondary text-muted-foreground hover:text-primary transition-all duration-200 hover:scale-110"
                   title="Move panel"
                 >
                   <Move size={14} />
                 </button>
                 {showMoveMenu && (
-                  <div className="absolute top-full right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg p-2 z-20">
+                  <div className="absolute top-full right-0 mt-1 bg-popover border border-border rounded-lg shadow-xl p-2 z-20 animate-scale-in backdrop-blur-sm">
                     <div className="grid grid-cols-3 gap-1">
                       <div />
                       <button
                         onClick={(e) => { e.stopPropagation(); handleMove("up"); }}
-                        className="p-1.5 rounded hover:bg-secondary transition-colors"
+                        className="p-1.5 rounded-md hover:bg-secondary hover:text-primary transition-all duration-200 hover:scale-110"
                       >
                         <ChevronUp size={14} />
                       </button>
                       <div />
                       <button
                         onClick={(e) => { e.stopPropagation(); handleMove("left"); }}
-                        className="p-1.5 rounded hover:bg-secondary transition-colors"
+                        className="p-1.5 rounded-md hover:bg-secondary hover:text-primary transition-all duration-200 hover:scale-110"
                       >
                         <ChevronLeft size={14} />
                       </button>
                       <div className="p-1.5" />
                       <button
                         onClick={(e) => { e.stopPropagation(); handleMove("right"); }}
-                        className="p-1.5 rounded hover:bg-secondary transition-colors"
+                        className="p-1.5 rounded-md hover:bg-secondary hover:text-primary transition-all duration-200 hover:scale-110"
                       >
                         <ChevronRight size={14} />
                       </button>
                       <div />
                       <button
                         onClick={(e) => { e.stopPropagation(); handleMove("down"); }}
-                        className="p-1.5 rounded hover:bg-secondary transition-colors"
+                        className="p-1.5 rounded-md hover:bg-secondary hover:text-primary transition-all duration-200 hover:scale-110"
                       >
                         <ChevronDown size={14} />
                       </button>
@@ -269,7 +343,7 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
               
               <button
                 onClick={(e) => { e.stopPropagation(); handleRemove(); }}
-                className="p-1.5 rounded hover:bg-destructive/10 text-destructive transition-colors"
+                className="p-1.5 rounded-md hover:bg-destructive/10 text-destructive hover:scale-110 transition-all duration-200"
                 title="Remove panel"
               >
                 <Trash2 size={14} />

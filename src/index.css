@@ -91,12 +91,13 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
   }
 
   /* Custom scrollbar for Grafana look */
   ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+    width: 10px;
+    height: 10px;
   }
 
   ::-webkit-scrollbar-track {
@@ -115,15 +116,22 @@
 
 @layer components {
   .grafana-panel {
-    @apply bg-card border border-border rounded-md overflow-hidden;
+    @apply bg-card border border-border rounded-md overflow-hidden transition-all duration-200;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  }
+
+  .grafana-panel:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   }
 
   .grafana-panel-header {
     @apply flex items-center justify-between px-4 py-2 border-b border-border bg-secondary/30;
+    backdrop-filter: blur(8px);
   }
 
   .grafana-panel-title {
     @apply text-sm font-medium text-foreground truncate;
+    letter-spacing: 0.01em;
   }
 
   .grafana-panel-content {
@@ -131,15 +139,29 @@
   }
 
   .grafana-stat-value {
-    @apply text-4xl font-semibold tabular-nums;
+    @apply text-5xl font-bold tabular-nums;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
   }
 
   .grafana-stat-label {
-    @apply text-sm text-muted-foreground mt-1;
+    @apply text-sm text-muted-foreground mt-2;
+    letter-spacing: 0.02em;
   }
 
   .grafana-btn {
-    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded transition-colors;
+    @apply inline-flex items-center justify-center gap-2 px-3 py-1.5 text-sm font-medium rounded transition-all duration-200;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  }
+
+  .grafana-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  }
+
+  .grafana-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
   }
 
   .grafana-btn-primary {
@@ -147,11 +169,11 @@
   }
 
   .grafana-btn-secondary {
-    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80;
+    @apply bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border;
   }
 
   .grafana-input {
-    @apply bg-input border border-border rounded px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent;
+    @apply bg-input border border-border rounded px-3 py-1.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-all duration-200;
   }
 
   .grafana-badge {
@@ -159,15 +181,23 @@
   }
 
   .grafana-badge-success {
-    @apply bg-success/20 text-success;
+    @apply bg-success/20 text-success border border-success/30;
   }
 
   .grafana-badge-warning {
-    @apply bg-warning/20 text-warning;
+    @apply bg-warning/20 text-warning border border-warning/30;
   }
 
   .grafana-badge-error {
-    @apply bg-destructive/20 text-destructive;
+    @apply bg-destructive/20 text-destructive border border-destructive/30;
+  }
+
+  .panel-header-actions {
+    @apply flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200;
+  }
+
+  .grafana-panel:hover .panel-header-actions {
+    @apply opacity-100;
   }
 }
 
@@ -202,5 +232,68 @@
 
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .animate-slide-in-right {
+    animation: slideInRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-slide-out-left {
+    animation: slideOutLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.15s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideInRight {
+    from {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideOutLeft {
+    from {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  .backdrop-blur-panel {
+    backdrop-filter: blur(12px) saturate(180%);
+    background-color: rgba(17, 18, 23, 0.8);
   }
 }

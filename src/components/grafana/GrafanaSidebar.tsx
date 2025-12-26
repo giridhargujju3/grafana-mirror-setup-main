@@ -307,29 +307,32 @@ export function GrafanaSidebar() {
   return (
     <aside
       className={cn(
-        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 flex-shrink-0 z-50",
+        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 z-50",
         sidebarCollapsed ? "w-16" : "w-64",
         isMobile && !sidebarCollapsed && "fixed inset-y-0 left-0 shadow-2xl"
       )}
+      style={{ 
+        boxShadow: sidebarCollapsed ? 'none' : '2px 0 8px rgba(0, 0, 0, 0.3)',
+      }}
     >
       {/* Logo */}
-      <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border">
+      <div className="h-14 flex items-center justify-between px-4 border-b border-sidebar-border bg-sidebar/50 backdrop-blur-sm">
         {!sidebarCollapsed && (
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex items-center gap-2 hover:opacity-80 transition-opacity animate-fade-in"
           >
-            <div className="w-8 h-8 rounded bg-primary flex items-center justify-center">
+            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
               <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary-foreground" fill="currentColor">
                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
               </svg>
             </div>
-            <span className="font-semibold text-foreground">Grafana</span>
+            <span className="font-semibold text-foreground tracking-tight">Grafana</span>
           </button>
         )}
         <button
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="p-1.5 rounded hover:bg-sidebar-accent text-sidebar-foreground transition-colors"
+          className="p-1.5 rounded-md hover:bg-sidebar-accent text-sidebar-foreground transition-all duration-200 hover:scale-110"
           title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
@@ -338,14 +341,14 @@ export function GrafanaSidebar() {
 
       {/* Search */}
       {!sidebarCollapsed && (
-        <div className="p-3">
+        <div className="p-3 animate-fade-in">
           <button
             onClick={() => setShowSearchModal(true)}
-            className="w-full flex items-center gap-2 px-3 py-2 bg-input rounded border border-border text-muted-foreground text-sm hover:border-primary/50 transition-colors"
+            className="w-full flex items-center gap-2 px-3 py-2 bg-input rounded-md border border-border text-muted-foreground text-sm hover:border-primary/50 hover:bg-input/80 transition-all duration-200 shadow-sm hover:shadow-md"
           >
             <Search size={16} />
-            <span>Search or jump to...</span>
-            <kbd className="ml-auto text-xs bg-secondary px-1.5 py-0.5 rounded">⌘K</kbd>
+            <span className="flex-1 text-left">Search or jump to...</span>
+            <kbd className="text-xs bg-secondary/70 px-1.5 py-0.5 rounded border border-border/50">⌘K</kbd>
           </button>
         </div>
       )}
@@ -354,7 +357,7 @@ export function GrafanaSidebar() {
         <div className="p-2">
           <button
             onClick={() => setShowSearchModal(true)}
-            className="w-full p-2 rounded hover:bg-sidebar-accent text-sidebar-foreground transition-colors flex justify-center"
+            className="w-full p-2 rounded-md hover:bg-sidebar-accent text-sidebar-foreground transition-all duration-200 flex justify-center hover:scale-110"
             title="Search (⌘K)"
           >
             <Search size={20} />
@@ -370,42 +373,51 @@ export function GrafanaSidebar() {
               <button
                 onClick={() => handleNavigation(item)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded text-sm transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200 group relative",
                   isActive(item.href)
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/50"
+                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:translate-x-0.5"
                 )}
               >
-                <item.icon size={20} className={isActive(item.href) ? "text-primary" : ""} />
+                <item.icon 
+                  size={20} 
+                  className={cn(
+                    "transition-colors duration-200",
+                    isActive(item.href) ? "text-primary" : "group-hover:text-primary/80"
+                  )} 
+                />
                 {!sidebarCollapsed && (
                   <>
-                    <span className="flex-1 text-left">{item.label}</span>
+                    <span className="flex-1 text-left font-medium">{item.label}</span>
                     {item.children && (
                       <ChevronRight
                         size={16}
                         className={cn(
-                          "transition-transform",
-                          expandedItems.includes(item.label) && "rotate-90"
+                          "transition-all duration-200",
+                          expandedItems.includes(item.label) && "rotate-90 text-primary"
                         )}
                       />
                     )}
                   </>
                 )}
+                {isActive(item.href) && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-r-full" />
+                )}
               </button>
               {!sidebarCollapsed && item.children && expandedItems.includes(item.label) && (
-                <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-4">
+                <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-4 animate-fade-in">
                   {item.children.map((child) => (
                     <li key={child.label}>
                       <button
                         onClick={() => handleChildClick(child)}
                         className={cn(
-                          "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded transition-colors",
+                          "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-all duration-200 group",
                           child.href && location.pathname === child.href
-                            ? "text-primary bg-sidebar-accent/50"
-                            : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+                            ? "text-primary bg-sidebar-accent/50 font-medium"
+                            : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50 hover:translate-x-0.5"
                         )}
                       >
-                        {child.icon && <child.icon size={14} />}
+                        {child.icon && <child.icon size={14} className="group-hover:text-primary/80 transition-colors" />}
                         {child.label}
                       </button>
                     </li>
@@ -607,19 +619,19 @@ export function GrafanaSidebar() {
                 )}
               </button>
               {!sidebarCollapsed && item.children && expandedItems.includes(item.label) && (
-                <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-4">
+                <ul className="ml-4 mt-1 space-y-0.5 border-l border-sidebar-border pl-4 animate-fade-in">
                   {item.children.map((child) => (
                     <li key={child.label}>
                       <button
                         onClick={() => handleChildClick(child)}
                         className={cn(
-                          "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded transition-colors",
+                          "w-full flex items-center gap-2 px-3 py-1.5 text-sm rounded-md transition-all duration-200 group",
                           child.href && location.pathname === child.href
-                            ? "text-primary bg-sidebar-accent/50"
-                            : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50"
+                            ? "text-primary bg-sidebar-accent/50 font-medium"
+                            : "text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50 hover:translate-x-0.5"
                         )}
                       >
-                        {child.icon && <child.icon size={14} />}
+                        {child.icon && <child.icon size={14} className="group-hover:text-primary/80 transition-colors" />}
                         {child.label}
                       </button>
                     </li>
