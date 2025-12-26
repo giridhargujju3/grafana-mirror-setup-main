@@ -1,7 +1,8 @@
 Write-Host "[TEST] API Key Testing Tool (PowerShell)" -ForegroundColor Cyan
 Write-Host ""
 
-$baseUrl = "http://localhost:3002"
+$config = Get-Content "config.json" | ConvertFrom-Json
+$baseUrl = "http://$($config.apiHost):$($config.apiPort)"
 
 try {
     # Step 1: Create API key
@@ -77,7 +78,7 @@ catch {
     
     if ($_.Exception.Message -like "*refused*") {
         Write-Host ""
-        Write-Host "[INFO] Make sure your server is running on port 3002" -ForegroundColor Yellow
+        Write-Host "[INFO] Make sure your server is running on port $($config.apiPort)" -ForegroundColor Yellow
         Write-Host "[INFO] Run: npm run dev (in the server directory)"
     }
 }

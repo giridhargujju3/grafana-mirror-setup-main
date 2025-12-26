@@ -6,6 +6,7 @@ import { DashboardContent } from '@/components/grafana/GrafanaDashboard';
 import { UnsavedChangesModal } from '@/components/grafana/modals/UnsavedChangesModal';
 import { SaveDashboardModal } from '@/components/grafana/modals/SaveDashboardModal';
 import { toast } from 'sonner';
+import { API_BASE_URL } from '@/lib/api';
 
 function BackendDashboardContent({ onReady }: { onReady: (saveHandler: any) => void }) {
   const { uid } = useParams();
@@ -44,7 +45,7 @@ function BackendDashboardContent({ onReady }: { onReady: (saveHandler: any) => v
 
       const apiKey = localStorage.getItem('grafana_api_key') || "gm_61f62cdbcbbe14d4bb4eb3631cf6a49a4a73ee138b899796a32ac387fab76242";
 
-      const response = await fetch('http://localhost:3002/api/dashboards/db', {
+      const response = await fetch(`${API_BASE_URL}/dashboards/db`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -86,7 +87,7 @@ function BackendDashboardContent({ onReady }: { onReady: (saveHandler: any) => v
   useEffect(() => {
     const loadDashboard = async () => {
       try {
-        const response = await fetch(`http://localhost:3002/api/dashboards/uid/${uid}`);
+        const response = await fetch(`${API_BASE_URL}/dashboards/uid/${uid}`);
         if (response.ok) {
           const data = await response.json();
           setDashboard(data);
@@ -100,7 +101,7 @@ function BackendDashboardContent({ onReady }: { onReady: (saveHandler: any) => v
               const enrichedPanels = await Promise.all(data.dashboard.panels.map(async (panel: any) => {
                 try {
                   if (panel.targets && panel.targets.length > 0) {
-                    const queryResponse = await fetch('http://localhost:3002/api/query', {
+                    const queryResponse = await fetch(`${API_BASE_URL}/query`, {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({

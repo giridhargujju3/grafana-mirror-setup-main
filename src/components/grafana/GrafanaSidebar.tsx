@@ -6,6 +6,7 @@ import { useDashboardRegistry, DashboardFolder } from "@/contexts/DashboardRegis
 import { FolderModal } from "./modals/FolderModal";
 import { MoveDashboardModal } from "./modals/MoveDashboardModal";
 import { toast } from "sonner";
+import { API_BASE_URL } from "@/lib/api";
 import {
   Home,
   LayoutDashboard,
@@ -100,7 +101,7 @@ export function GrafanaSidebar() {
 
     const loadBackendDashboards = async () => {
       try {
-        const response = await fetch('http://localhost:3002/api/dashboards');
+        const response = await fetch(`${API_BASE_URL}/dashboards`);
         if (response.ok) {
           const data = await response.json();
           // Map backend data to match expected structure

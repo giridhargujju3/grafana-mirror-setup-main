@@ -6,6 +6,7 @@ import { DashboardProvider } from "@/contexts/DashboardContext";
 import { useDashboardRegistry } from "@/contexts/DashboardRegistryContext";
 import { useNavigate } from "react-router-dom";
 import { LayoutDashboard, Plus, FolderPlus, FileUp, Clock, Star, Trash2, Folder } from "lucide-react";
+import { API_BASE_URL } from "@/lib/api";
 
 function DashboardsContent() {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ function DashboardsContent() {
 
     const loadBackendDashboards = async () => {
       try {
-        const response = await fetch('http://localhost:3002/api/dashboards');
+        const response = await fetch(`${API_BASE_URL}/dashboards`);
         if (response.ok) {
           const data = await response.json();
           setBackendDashboards(data);
