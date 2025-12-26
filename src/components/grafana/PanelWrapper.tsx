@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Edit, Copy, Trash2, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal, Maximize2, Minimize2 } from "lucide-react";
+import { Edit, Copy, Trash2, Move, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, MoreHorizontal, Maximize2, Minimize2, GripVertical } from "lucide-react";
 import { useDashboard, PanelConfig } from "@/contexts/DashboardContext";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -7,9 +7,10 @@ import { toast } from "sonner";
 interface PanelWrapperProps {
   panel: PanelConfig;
   children: React.ReactNode;
+  dragHandleProps?: any;
 }
 
-export function PanelWrapper({ panel, children }: PanelWrapperProps) {
+export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperProps) {
   const { 
     isEditMode, 
     setEditingPanel, 
@@ -186,6 +187,18 @@ export function PanelWrapper({ panel, children }: PanelWrapperProps) {
               <path d="M6 1L1 6" />
               <path d="M6 3.5L3.5 6" />
             </svg>
+          </div>
+        )}
+        
+        {/* Drag Handle */}
+        {isEditMode && (
+          <div 
+            {...dragHandleProps}
+            className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity cursor-move z-10 bg-card/95 backdrop-blur border border-border rounded p-1 shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+            title="Drag to reorder"
+          >
+            <GripVertical size={14} className="text-muted-foreground" />
           </div>
         )}
         

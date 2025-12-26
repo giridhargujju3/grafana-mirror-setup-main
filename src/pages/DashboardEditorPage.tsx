@@ -4,7 +4,7 @@ import { useDashboardRegistry, DashboardEntry } from "@/contexts/DashboardRegist
 import { DashboardProvider } from "@/contexts/DashboardContext";
 import { DashboardContent } from "@/components/grafana/GrafanaDashboard";
 import { UnsavedChangesModal } from "@/components/grafana/modals/UnsavedChangesModal";
-import { API_BASE_URL } from "@/lib/api";
+import { API_BASE_URL, API_KEY } from "@/lib/api";
 
 export default function DashboardEditorPage() {
   const navigate = useNavigate();
@@ -183,7 +183,7 @@ export default function DashboardEditorPage() {
     try {
       // Check if this dashboard should be saved to backend
       // We'll save to backend if it was originally from backend OR if we want to persist all saves
-      const apiKey = localStorage.getItem('grafana_api_key') || "gm_61f62cdbcbbe14d4bb4eb3631cf6a49a4a73ee138b899796a32ac387fab76242";
+      const apiKey = API_KEY;
       
       const response = await fetch(`${API_BASE_URL}/dashboards/db`, {
         method: 'POST',

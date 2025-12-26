@@ -396,8 +396,8 @@ function DashboardContent() {
                       
                       return (
                         <Draggable 
-                          key={panel.id} 
-                          draggableId={panel.id} 
+                          key={String(panel.id)} 
+                          draggableId={String(panel.id)} 
                           index={index}
                           isDragDisabled={!isEditMode}
                         >
@@ -405,7 +405,6 @@ function DashboardContent() {
                             <div
                               ref={provided.innerRef}
                               {...provided.draggableProps}
-                              {...provided.dragHandleProps}
                               className={cn(
                                 "col-span-12",
                                 panel.gridPos.w <= 3 && "md:col-span-6 lg:col-span-3",
@@ -421,7 +420,7 @@ function DashboardContent() {
                                 ...heightStyle
                               }}
                             >
-                              <PanelWrapper panel={panel}>
+                              <PanelWrapper panel={panel} dragHandleProps={provided.dragHandleProps}>
                                 {renderPanel(panel)}
                               </PanelWrapper>
                             </div>

@@ -6,7 +6,7 @@ import { DashboardContent } from '@/components/grafana/GrafanaDashboard';
 import { UnsavedChangesModal } from '@/components/grafana/modals/UnsavedChangesModal';
 import { SaveDashboardModal } from '@/components/grafana/modals/SaveDashboardModal';
 import { toast } from 'sonner';
-import { API_BASE_URL } from '@/lib/api';
+import { API_BASE_URL, API_KEY } from '@/lib/api';
 
 function BackendDashboardContent({ onReady }: { onReady: (saveHandler: any) => void }) {
   const { uid } = useParams();
@@ -43,7 +43,7 @@ function BackendDashboardContent({ onReady }: { onReady: (saveHandler: any) => v
         overwrite: true
       };
 
-      const apiKey = localStorage.getItem('grafana_api_key') || "gm_61f62cdbcbbe14d4bb4eb3631cf6a49a4a73ee138b899796a32ac387fab76242";
+      const apiKey = API_KEY;
 
       const response = await fetch(`${API_BASE_URL}/dashboards/db`, {
         method: 'POST',

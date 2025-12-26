@@ -72,6 +72,16 @@ try {
     Write-Host ""
     Write-Host "[SAVED] API key saved to api-key.txt" -ForegroundColor Green
     
+    # Update config.json with the new API key
+    try {
+        $config = Get-Content "config.json" | ConvertFrom-Json
+        $config.apiKey = $apiKey
+        $config | ConvertTo-Json | Set-Content "config.json"
+        Write-Host "[SAVED] API key saved to config.json" -ForegroundColor Green
+    } catch {
+        Write-Host "[WARNING] Could not update config.json: $($_.Exception.Message)" -ForegroundColor Yellow
+    }
+    
 }
 catch {
     Write-Host "[ERROR] Test failed: $($_.Exception.Message)" -ForegroundColor Red

@@ -1,4 +1,5 @@
 {
   "apiPort": 3002,
-  "apiHost": "localhost"
+  "apiHost": "localhost",
+  "apiKey": "gm_ce921d2224d27232cd17f530f0939107c6bf2fb7fe7b4e52a0d4b559bc23b091"
 }

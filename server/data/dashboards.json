@@ -1,6 +1,6 @@
 [
   {
-    "id": 1766732655469,
+    "id": 1766736959854,
     "uid": "skew-dashboard-001",
     "title": "Skew - skew_information",
     "tags": [
@@ -10,7 +10,7 @@
     ],
     "timezone": "browser",
     "schemaVersion": 39,
-    "version": 2,
+    "version": 3,
     "refresh": "30s",
     "time": {
       "from": "now-6h",
@@ -25,8 +25,8 @@
         "gridPos": {
           "x": 0,
           "y": 0,
-          "h": 20,
-          "w": 24
+          "w": 12,
+          "h": 6
         },
         "datasource": {
           "type": "postgres",
@@ -36,8 +36,11 @@
           {
             "refId": "A",
             "rawQuery": true,
-            "rawSql": "SELECT * FROM skew_info LIMIT 100",
-            "format": "table"
+            "rawSql": "SELECT * FROM skew_info LIMIT 10",
+            "format": "table",
+            "expr": "SELECT * FROM skew_info LIMIT 10",
+            "queryMode": "code",
+            "datasource": "ds-1766647484377"
           }
         ],
         "fieldConfig": {
@@ -107,7 +110,124 @@
             "displayMode": "list",
             "placement": "right",
             "calcs": []
-          }
+          },
+          "queryResult": {
+            "columns": [
+              "id",
+              "skew_group",
+              "delay_corner",
+              "max_id",
+              "min_id",
+              "skew",
+              "max_pin",
+              "min_pin"
+            ],
+            "rows": [
+              [
+                1,
+                "core_clock_1/func",
+                "dc_ss1_corner.setup",
+                1.3954,
+                1.2443,
+                0.1511,
+                "ariane_1/ex_stage_i_lsu_i_lsu_bypass_i_mem_q_reg[0]_vaddr[18]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                2,
+                "core_clock_2/func",
+                "dc_ss1_corner.setup",
+                1.0598,
+                0.9157,
+                0.1441,
+                "ariane_2/i_cache_subsystem_i_icache/sram_block[2].data_sram_macro_mem[5].i_ram/clk",
+                "ariane_2/issue_stage_i_i_scoreboard/mem_q_reg[3]_sbe_ex_tval[6]/CP"
+              ],
+              [
+                3,
+                "core_clock_1/func",
+                "dc_ss3_corner.setup",
+                1.6123,
+                1.3136,
+                0.2987,
+                "ariane_1/i_cache_subsystem_i_icache/state_q_reg[1]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].tag_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                4,
+                "core_clock_2/func",
+                "dc_ss3_corner.setup",
+                1.2054,
+                1.0002,
+                0.2052,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                5,
+                "core_clock_1/func",
+                "dc_ff1_corner.hold",
+                0.7176,
+                0.5759,
+                0.1417,
+                "ariane_1/issue_stage_i_i_scoreboard/mem_q_reg[1]_sbe_pc[63]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                6,
+                "core_clock_2/func",
+                "dc_ff1_corner.hold",
+                0.539,
+                0.4637,
+                0.0753,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                7,
+                "core_clock_1/func",
+                "dc_ff3_corner.hold",
+                0.655,
+                0.5485,
+                0.1065,
+                "ariane_1/i_perf_counters/perf_counter_q_reg[6][9]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                8,
+                "core_clock_2/func",
+                "dc_ff3_corner.hold",
+                0.5104,
+                0.4252,
+                0.0852,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                9,
+                "core_clock_1/func",
+                "dc_ss1_corner.setup",
+                1.3954,
+                1.2443,
+                0.1511,
+                "ariane_1/ex_stage_i_lsu_i_lsu_bypass_i_mem_q_reg[0]_vaddr[18]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                10,
+                "core_clock_2/func",
+                "dc_ss1_corner.setup",
+                1.0598,
+                0.9157,
+                0.1441,
+                "ariane_2/i_cache_subsystem_i_icache/sram_block[2].data_sram_macro_mem[5].i_ram/clk",
+                "ariane_2/issue_stage_i_i_scoreboard/mem_q_reg[3]_sbe_ex_tval[6]/CP"
+              ]
+            ],
+            "rowCount": 10
+          },
+          "layout": "vertical",
+          "showValues": "auto"
         }
       },
       {
@@ -118,8 +238,8 @@
         "gridPos": {
           "x": 0,
           "y": 20,
-          "h": 19,
-          "w": 24
+          "w": 12,
+          "h": 12
         },
         "datasource": {
           "type": "postgres",
@@ -130,7 +250,10 @@
             "refId": "B",
             "rawQuery": true,
             "rawSql": "SELECT * FROM skew_info",
-            "format": "table"
+            "format": "table",
+            "expr": "SELECT * FROM skew_info",
+            "queryMode": "code",
+            "datasource": "ds-1766647484377"
           }
         ],
         "fieldConfig": {
@@ -178,7 +301,182 @@
             "countRows": false,
             "fields": ""
           },
-          "sortBy": []
+          "sortBy": [],
+          "queryResult": {
+            "columns": [
+              "id",
+              "skew_group",
+              "delay_corner",
+              "max_id",
+              "min_id",
+              "skew",
+              "max_pin",
+              "min_pin"
+            ],
+            "rows": [
+              [
+                1,
+                "core_clock_1/func",
+                "dc_ss1_corner.setup",
+                1.3954,
+                1.2443,
+                0.1511,
+                "ariane_1/ex_stage_i_lsu_i_lsu_bypass_i_mem_q_reg[0]_vaddr[18]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                2,
+                "core_clock_2/func",
+                "dc_ss1_corner.setup",
+                1.0598,
+                0.9157,
+                0.1441,
+                "ariane_2/i_cache_subsystem_i_icache/sram_block[2].data_sram_macro_mem[5].i_ram/clk",
+                "ariane_2/issue_stage_i_i_scoreboard/mem_q_reg[3]_sbe_ex_tval[6]/CP"
+              ],
+              [
+                3,
+                "core_clock_1/func",
+                "dc_ss3_corner.setup",
+                1.6123,
+                1.3136,
+                0.2987,
+                "ariane_1/i_cache_subsystem_i_icache/state_q_reg[1]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].tag_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                4,
+                "core_clock_2/func",
+                "dc_ss3_corner.setup",
+                1.2054,
+                1.0002,
+                0.2052,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                5,
+                "core_clock_1/func",
+                "dc_ff1_corner.hold",
+                0.7176,
+                0.5759,
+                0.1417,
+                "ariane_1/issue_stage_i_i_scoreboard/mem_q_reg[1]_sbe_pc[63]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                6,
+                "core_clock_2/func",
+                "dc_ff1_corner.hold",
+                0.539,
+                0.4637,
+                0.0753,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                7,
+                "core_clock_1/func",
+                "dc_ff3_corner.hold",
+                0.655,
+                0.5485,
+                0.1065,
+                "ariane_1/i_perf_counters/perf_counter_q_reg[6][9]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                8,
+                "core_clock_2/func",
+                "dc_ff3_corner.hold",
+                0.5104,
+                0.4252,
+                0.0852,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                9,
+                "core_clock_1/func",
+                "dc_ss1_corner.setup",
+                1.3954,
+                1.2443,
+                0.1511,
+                "ariane_1/ex_stage_i_lsu_i_lsu_bypass_i_mem_q_reg[0]_vaddr[18]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                10,
+                "core_clock_2/func",
+                "dc_ss1_corner.setup",
+                1.0598,
+                0.9157,
+                0.1441,
+                "ariane_2/i_cache_subsystem_i_icache/sram_block[2].data_sram_macro_mem[5].i_ram/clk",
+                "ariane_2/issue_stage_i_i_scoreboard/mem_q_reg[3]_sbe_ex_tval[6]/CP"
+              ],
+              [
+                11,
+                "core_clock_1/func",
+                "dc_ss3_corner.setup",
+                1.6123,
+                1.3136,
+                0.2987,
+                "ariane_1/i_cache_subsystem_i_icache/state_q_reg[1]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].tag_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                12,
+                "core_clock_2/func",
+                "dc_ss3_corner.setup",
+                1.2054,
+                1.0002,
+                0.2052,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                13,
+                "core_clock_1/func",
+                "dc_ff1_corner.hold",
+                0.7176,
+                0.5759,
+                0.1417,
+                "ariane_1/issue_stage_i_i_scoreboard/mem_q_reg[1]_sbe_pc[63]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                14,
+                "core_clock_2/func",
+                "dc_ff1_corner.hold",
+                0.539,
+                0.4637,
+                0.0753,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ],
+              [
+                15,
+                "core_clock_1/func",
+                "dc_ff3_corner.hold",
+                0.655,
+                0.5485,
+                0.1065,
+                "ariane_1/i_perf_counters/perf_counter_q_reg[6][9]/CP",
+                "ariane_1/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[2].i_ram/clk"
+              ],
+              [
+                16,
+                "core_clock_2/func",
+                "dc_ff3_corner.hold",
+                0.5104,
+                0.4252,
+                0.0852,
+                "ariane_2/i_frontend/icache_vaddr_q_reg[38]/CP",
+                "ariane_2/i_cache_subsystem_i_nbdcache_sram_block[0].data_sram_macro_mem[0].i_ram/clk"
+              ]
+            ],
+            "rowCount": 16
+          }
         }
       }
     ],
@@ -187,6 +485,7 @@
     "folderUid": "general",
     "style": "dark",
     "slug": "skew-skew-information",
-    "updated": "2025-12-26T07:04:15.469Z"
+    "updated": "2025-12-26T08:17:21.448Z",
+    "overwrite": true
   }
 ]

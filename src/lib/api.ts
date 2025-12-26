@@ -17,4 +17,9 @@ export const getApiUrl = () => {
   return `http://${config.apiHost || 'localhost'}:${config.apiPort || 3002}/api`;
 };
 
+export const getApiKey = () => {
+  return config.apiKey || '';
+};
+
 export const API_BASE_URL = getApiUrl();
+export const API_KEY = getApiKey();

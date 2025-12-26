@@ -139,12 +139,8 @@ export function PanelEditorModal() {
         if (!dsId) {
           if (editingPanel.datasource) {
             if (typeof editingPanel.datasource === 'object') {
-              // If it's a postgres type, map to our local 'postgres' datasource id
-              if ((editingPanel.datasource as any).type === 'postgres') {
-                dsId = 'postgres';
-              } else {
-                dsId = (editingPanel.datasource as any).uid;
-              }
+              // Use UID from datasource object
+              dsId = (editingPanel.datasource as any).uid || (editingPanel.datasource as any).type;
             } else {
               dsId = editingPanel.datasource;
             }

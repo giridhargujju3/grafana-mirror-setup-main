@@ -3,7 +3,7 @@ $config = Get-Content "config.json" | ConvertFrom-Json
 $baseUrl = "http://$($config.apiHost):$($config.apiPort)"
 
 $headers = @{
-    "Authorization" = "Bearer gm_2a448ee92faed3a47ed62c4006fc8d369e70fbca5dc893ff2b3d1e2ce6180559"
+    "Authorization" = "Bearer $($config.apiKey)"
     "Content-Type" = "application/json"
 }
 
