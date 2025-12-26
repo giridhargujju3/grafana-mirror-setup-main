@@ -37,14 +37,14 @@ router.post('/keys', async (req: Request, res: Response) => {
 });
 
 // GET /api/auth/keys - List all API keys
-router.get('/keys', (req: Request, res: Response) => {
+router.get('/keys', async (req: Request, res: Response) => {
   try {
-    const apiKeys = apiKeyService.getAllApiKeys();
+    const apiKeys = await apiKeyService.getAllApiKeys();
     const response: ApiKeyResponse[] = apiKeys.map(key => ({
       id: key.id,
       name: key.name,
       role: key.role,
-      key: key.key, // Include the key so it can be copied from the UI
+      key: key.key,
       created: key.created.toISOString(),
       lastUsed: key.lastUsed?.toISOString(),
       expires: key.expires?.toISOString()

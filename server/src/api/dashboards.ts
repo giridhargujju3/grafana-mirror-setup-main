@@ -1,77 +1,31 @@
 import { Router, Request, Response } from 'express';
 import { authenticateApiKey, requireRole } from '../middleware/auth';
-import fs from 'fs/promises';
-import path from 'path';
+import { dashboardRepository } from '../database/repositories/dashboardRepository';
 
 const router = Router();
 
-// Persistent storage for dashboards
-const storageFile = path.join(process.cwd(), 'data', 'dashboards.json');
-const dashboards: Map<string, any> = new Map();
-
-// Load dashboards from file
-const loadDashboards = async () => {
-  try {
-    const dataDir = path.dirname(storageFile);
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-
-    const data = await fs.readFile(storageFile, 'utf-8');
-    const loadedDashboards = JSON.parse(data);
-    
-    loadedDashboards.forEach((dashboard: any) => {
-      dashboards.set(dashboard.uid, dashboard);
-    });
-    console.log(`✅ Loaded ${loadedDashboards.length} dashboards from storage`);
-  } catch (error) {
-    if ((error as any).code !== 'ENOENT') {
-      console.error('Error loading dashboards:', error);
-    }
-    console.log('📝 Starting with empty dashboards storage');
-  }
-};
-
-// Save dashboards to file
-const saveDashboards = async () => {
-  try {
-    const dataDir = path.dirname(storageFile);
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-
-    const dashboardList = Array.from(dashboards.values());
-    await fs.writeFile(storageFile, JSON.stringify(dashboardList, null, 2));
-  } catch (error) {
-    console.error('Error saving dashboards:', error);
-  }
-};
-
-// Initialize storage
-loadDashboards();
-
 // Apply API key authentication to all dashboard routes EXCEPT listing
 // Allow public access to dashboard listing for frontend
-router.get('/', (req: Request, res: Response) => {
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const dashboardList = Array.from(dashboards.values()).map(dashboard => ({
-      id: dashboard.id,
-      uid: dashboard.uid,
-      title: dashboard.title,
-      tags: dashboard.tags || [],
-      url: `/d/${dashboard.uid}/${dashboard.slug}`,
-      isStarred: false,
-      folderId: dashboard.folderId || 0,
-      folderUid: dashboard.folderUid || '',
-      folderTitle: dashboard.folderTitle || '',
-      folderUrl: dashboard.folderUrl || '',
-      type: 'dash-db',
-      uri: `db/${dashboard.slug}`
-    }));
+    const dashboards = await dashboardRepository.findAll();
+    const dashboardList = dashboards.map(dashboard => {
+      const slug = dashboard.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || dashboard.uid;
+      return {
+        id: dashboard.id,
+        uid: dashboard.uid,
+        title: dashboard.title,
+        tags: dashboard.tags || [],
+        url: `/d/${dashboard.uid}/${slug}`,
+        isStarred: false,
+        folderId: 0,
+        folderUid: '',
+        folderTitle: '',
+        folderUrl: '',
+        type: 'dash-db',
+        uri: `db/${slug}`
+      };
+    });
     res.json(dashboardList);
   } catch (error) {
     res.status(500).json({ 
@@ -82,13 +36,15 @@ router.get('/', (req: Request, res: Response) => {
 });
 
 // GET /api/dashboards/uid/:uid - Get dashboard by UID (public access for frontend)
-router.get('/uid/:uid', (req: Request, res: Response) => {
+router.get('/uid/:uid', async (req: Request, res: Response) => {
   try {
-    const dashboard = Array.from(dashboards.values()).find(d => d.uid === req.params.uid);
+    const dashboard = await dashboardRepository.findByUid(req.params.uid);
     
     if (!dashboard) {
       return res.status(404).json({ error: 'Dashboard not found' });
     }
+
+    const slug = dashboard.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || dashboard.uid;
 
     res.json({
       meta: {
@@ -97,24 +53,29 @@ router.get('/uid/:uid', (req: Request, res: Response) => {
         canEdit: false,
         canAdmin: false,
         canStar: true,
-        slug: dashboard.slug,
-        url: `/d/${dashboard.uid}/${dashboard.slug}`,
+        slug: slug,
+        url: `/d/${dashboard.uid}/${slug}`,
         expires: '0001-01-01T00:00:00Z',
-        created: dashboard.created || new Date().toISOString(),
-        updated: dashboard.updated || new Date().toISOString(),
+        created: dashboard.created_at.toISOString(),
+        updated: dashboard.updated_at.toISOString(),
         updatedBy: 'admin',
         createdBy: 'admin',
         version: dashboard.version || 1,
         hasAcl: false,
         isFolder: false,
-        folderId: dashboard.folderId || 0,
-        folderUid: dashboard.folderUid || '',
-        folderTitle: dashboard.folderTitle || '',
-        folderUrl: dashboard.folderUrl || '',
+        folderId: 0,
+        folderUid: '',
+        folderTitle: '',
+        folderUrl: '',
         provisioned: false,
         provisionedExternalId: ''
       },
-      dashboard
+      dashboard: {
+        ...dashboard,
+        panels: dashboard.panels,
+        time: dashboard.time,
+        slug: slug
+      }
     });
   } catch (error) {
     res.status(500).json({ 
@@ -136,37 +97,48 @@ router.post('/db', requireRole(['Admin', 'Editor']), async (req: Request, res: R
       return res.status(400).json({ error: 'Dashboard is required' });
     }
 
-    // Generate UID if not provided
     if (!dashboard.uid) {
       dashboard.uid = `dash-${Date.now()}`;
     }
 
-    // Generate slug from title
-    if (!dashboard.slug && dashboard.title) {
-      dashboard.slug = dashboard.title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
-    }
-
-    // Set metadata
-    const now = new Date().toISOString();
+    const slug = dashboard.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || dashboard.uid;
     dashboard.id = dashboard.id || Date.now();
-    dashboard.version = (dashboard.version || 0) + 1;
-    dashboard.updated = now;
-    dashboard.folderId = folderId || 0;
-    
-    if (!dashboards.has(dashboard.uid)) {
-      dashboard.created = now;
-    }
 
-    dashboards.set(dashboard.uid, dashboard);
-    await saveDashboards();
+    const existing = await dashboardRepository.findByUid(dashboard.uid);
+    
+    let savedDashboard;
+    if (existing) {
+      savedDashboard = await dashboardRepository.update(existing.id, {
+        title: dashboard.title,
+        tags: dashboard.tags || [],
+        timezone: dashboard.timezone,
+        version: (existing.version || 0) + 1,
+        refresh: dashboard.refresh,
+        time: dashboard.time,
+        panels: dashboard.panels || []
+      });
+    } else {
+      savedDashboard = await dashboardRepository.create({
+        id: dashboard.id,
+        uid: dashboard.uid,
+        title: dashboard.title,
+        tags: dashboard.tags || [],
+        timezone: dashboard.timezone,
+        schema_version: dashboard.schemaVersion,
+        version: 1,
+        refresh: dashboard.refresh,
+        time: dashboard.time,
+        panels: dashboard.panels || []
+      });
+    }
 
     res.json({
-      id: dashboard.id,
-      uid: dashboard.uid,
-      url: `/d/${dashboard.uid}/${dashboard.slug}`,
+      id: savedDashboard!.id,
+      uid: savedDashboard!.uid,
+      url: `/d/${savedDashboard!.uid}/${slug}`,
       status: 'success',
-      version: dashboard.version,
-      slug: dashboard.slug
+      version: savedDashboard!.version,
+      slug: slug
     });
   } catch (error) {
     res.status(500).json({ 
@@ -180,14 +152,13 @@ router.post('/db', requireRole(['Admin', 'Editor']), async (req: Request, res: R
 router.delete('/uid/:uid', requireRole(['Admin', 'Editor']), async (req: Request, res: Response) => {
   try {
     const uid = req.params.uid;
-    const dashboard = Array.from(dashboards.values()).find(d => d.uid === uid);
+    const dashboard = await dashboardRepository.findByUid(uid);
     
     if (!dashboard) {
       return res.status(404).json({ error: 'Dashboard not found' });
     }
 
-    dashboards.delete(uid);
-    await saveDashboards();
+    await dashboardRepository.deleteByUid(uid);
     
     res.json({
       title: dashboard.title,
@@ -203,46 +174,40 @@ router.delete('/uid/:uid', requireRole(['Admin', 'Editor']), async (req: Request
 });
 
 // GET /api/search - Search dashboards
-router.get('/search', requireRole(['Admin', 'Editor', 'Viewer']), (req: Request, res: Response) => {
+router.get('/search', requireRole(['Admin', 'Editor', 'Viewer']), async (req: Request, res: Response) => {
   try {
     const { query, tag, type, dashboardIds, folderIds, starred, limit } = req.query;
     
-    let results = Array.from(dashboards.values());
+    let results = await dashboardRepository.findAll();
     
-    // Filter by query
     if (query) {
-      const searchTerm = (query as string).toLowerCase();
-      results = results.filter(d => 
-        d.title?.toLowerCase().includes(searchTerm) ||
-        d.tags?.some((tag: string) => tag.toLowerCase().includes(searchTerm))
-      );
+      results = await dashboardRepository.searchByTitle(query as string);
+    } else if (tag) {
+      results = await dashboardRepository.findByTags([tag as string]);
     }
     
-    // Filter by tag
-    if (tag) {
-      results = results.filter(d => d.tags?.includes(tag));
-    }
-    
-    // Apply limit
     if (limit) {
       results = results.slice(0, parseInt(limit as string));
     }
     
-    const searchResults = results.map(dashboard => ({
-      id: dashboard.id,
-      uid: dashboard.uid,
-      title: dashboard.title,
-      uri: `db/${dashboard.slug}`,
-      url: `/d/${dashboard.uid}/${dashboard.slug}`,
-      slug: dashboard.slug,
-      type: 'dash-db',
-      tags: dashboard.tags || [],
-      isStarred: false,
-      folderId: dashboard.folderId || 0,
-      folderUid: dashboard.folderUid || '',
-      folderTitle: dashboard.folderTitle || '',
-      folderUrl: dashboard.folderUrl || ''
-    }));
+    const searchResults = results.map(dashboard => {
+      const slug = dashboard.title?.toLowerCase().replace(/[^a-z0-9]+/g, '-') || dashboard.uid;
+      return {
+        id: dashboard.id,
+        uid: dashboard.uid,
+        title: dashboard.title,
+        uri: `db/${slug}`,
+        url: `/d/${dashboard.uid}/${slug}`,
+        slug: slug,
+        type: 'dash-db',
+        tags: dashboard.tags || [],
+        isStarred: false,
+        folderId: 0,
+        folderUid: '',
+        folderTitle: '',
+        folderUrl: ''
+      };
+    });
 
     res.json(searchResults);
   } catch (error) {

@@ -1,7 +1,7 @@
 {
   "id": null,
-  "uid": "skew-dashboard-001",
-  "title": "Skew - skew_information",
+  "uid": "skew-dashboard-testing",
+  "title": "skew_data_testing",
   "tags": ["skew", "analytics", "performance"],
   "timezone": "browser",
   "schemaVersion": 39,
@@ -14,7 +14,7 @@
   "panels": [
     {
       "id": 1,
-      "type": "barchart",
+      "type": "table",
       "title": "Skew Multi Corners",
       "description": "Visualization of skew data across different corners",
       "gridPos": {
@@ -25,7 +25,7 @@
       },
       "datasource": {
         "type": "postgres",
-        "uid": "ds-1766647484377"
+        "uid": "ds-1766758115448"
       },
       "targets": [
         {
@@ -118,7 +118,7 @@
       },
       "datasource": {
         "type": "postgres",
-        "uid": "ds-1766647484377"
+        "uid": "ds-1766758115448"
       },
       "targets": [
         {

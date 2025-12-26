@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
-    "start": "node dist/app.js"
+    "start": "node dist/app.js",
+    "migrate": "tsx src/scripts/migrate-json-to-postgres.ts"
   },
   "dependencies": {
     "compression": "^1.7.4",

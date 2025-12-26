@@ -1,67 +1,56 @@
 import { Router, Request, Response } from 'express';
 import { postgresService } from '../services/postgresService';
 import { DataSourceConfig } from '../types/datasource';
-import fs from 'fs/promises';
-import path from 'path';
+import { datasourceRepository } from '../database/repositories/datasourceRepository';
 
 const router = Router();
 
-// Persistent storage for data sources
-const storageFile = path.join(process.cwd(), 'data', 'datasources.json');
-const dataSources: Map<string, DataSourceConfig> = new Map();
-
-// Load datasources from file
 const loadDataSources = async () => {
   try {
-    const dataDir = path.dirname(storageFile);
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-
-    const data = await fs.readFile(storageFile, 'utf-8');
-    const sources: DataSourceConfig[] = JSON.parse(data);
-    
+    const sources = await datasourceRepository.findAll();
     sources.forEach(source => {
-      dataSources.set(source.id, source);
-      postgresService.addDataSource(source).catch(console.error);
+      const config: DataSourceConfig = {
+        id: source.uid,
+        name: source.datasource_name,
+        type: source.type as any,
+        url: source.url,
+        database: source.database,
+        user: 'postgres',
+        password: 'root',
+        sslMode: 'disable',
+        maxOpenConns: 10
+      };
+      postgresService.addDataSource(config).catch(console.error);
     });
-    console.log(`✅ Loaded ${sources.length} datasources from storage`);
+    console.log(`✅ Loaded ${sources.length} datasources from database`);
   } catch (error) {
-    if ((error as any).code !== 'ENOENT') {
-      console.error('Error loading datasources:', error);
-    }
+    console.error('Error loading datasources:', error);
     console.log('📝 Starting with empty datasources storage');
   }
 };
 
-// Save datasources to file
-const saveDataSources = async () => {
-  try {
-    const dataDir = path.dirname(storageFile);
-    try {
-      await fs.access(dataDir);
-    } catch {
-      await fs.mkdir(dataDir, { recursive: true });
-    }
-
-    const sources = Array.from(dataSources.values());
-    await fs.writeFile(storageFile, JSON.stringify(sources, null, 2));
-  } catch (error) {
-    console.error('Error saving datasources:', error);
-  }
-};
-
-// Initialize storage
 loadDataSources();
 
 // GET /api/datasources - List all data sources
-router.get('/', (req: Request, res: Response) => {
-  const sources = Array.from(dataSources.values());
-  console.log('GET /api/datasources - returning:', sources.length, 'data sources');
-  console.log('Data sources:', sources);
-  res.json(sources);
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const sources = await datasourceRepository.findAll();
+    const dataSources = sources.map(source => ({
+      id: source.uid,
+      name: source.datasource_name,
+      type: source.type,
+      url: source.url,
+      database: source.database,
+      user: 'postgres',
+      password: 'root',
+      sslMode: 'disable',
+      maxOpenConns: 10
+    }));
+    console.log('GET /api/datasources - returning:', dataSources.length, 'data sources');
+    res.json(dataSources);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch data sources' });
+  }
 });
 
 // POST /api/datasources - Create new data source
@@ -69,12 +58,10 @@ router.post('/', async (req: Request, res: Response) => {
   try {
     const config: DataSourceConfig = req.body;
     
-    // Generate ID if not provided
     if (!config.id) {
       config.id = `ds-${Date.now()}`;
     }
 
-    // Test connection before saving
     const testResult = await postgresService.testDataSource(config);
     if (!testResult.success) {
       return res.status(400).json({ 
@@ -83,16 +70,17 @@ router.post('/', async (req: Request, res: Response) => {
       });
     }
 
-    // Save data source
-    dataSources.set(config.id, config);
-    await saveDataSources();
+    await datasourceRepository.create({
+      uid: config.id,
+      datasource_name: config.name,
+      type: config.type,
+      url: config.url,
+      database: config.database
+    });
     
-    // Add to PostgreSQL service for query execution
     await postgresService.addDataSource(config);
     
     console.log('Data source saved:', config);
-    console.log('Total data sources now:', dataSources.size);
-    console.log('PostgreSQL service connections:', Array.from(postgresService.getConnectionIds()));
 
     res.status(201).json(config);
   } catch (error) {
@@ -122,12 +110,26 @@ router.post('/test', async (req: Request, res: Response) => {
 });
 
 // GET /api/datasources/:id - Get specific data source
-router.get('/:id', (req: Request, res: Response) => {
-  const dataSource = dataSources.get(req.params.id);
-  if (!dataSource) {
-    return res.status(404).json({ error: 'Data source not found' });
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const source = await datasourceRepository.findByUid(req.params.id);
+    if (!source) {
+      return res.status(404).json({ error: 'Data source not found' });
+    }
+    res.json({
+      id: source.uid,
+      name: source.datasource_name,
+      type: source.type,
+      url: source.url,
+      database: source.database,
+      user: 'postgres',
+      password: 'root',
+      sslMode: 'disable',
+      maxOpenConns: 10
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch data source' });
   }
-  res.json(dataSource);
 });
 
 // PUT /api/datasources/:id - Update data source
@@ -135,7 +137,6 @@ router.put('/:id', async (req: Request, res: Response) => {
   try {
     const config: DataSourceConfig = { ...req.body, id: req.params.id };
     
-    // Test connection
     const testResult = await postgresService.testDataSource(config);
     if (!testResult.success) {
       return res.status(400).json({ 
@@ -144,9 +145,12 @@ router.put('/:id', async (req: Request, res: Response) => {
       });
     }
 
-    // Update data source
-    dataSources.set(config.id, config);
-    await saveDataSources();
+    await datasourceRepository.update(req.params.id, {
+      datasource_name: config.name,
+      type: config.type,
+      url: config.url,
+      database: config.database
+    });
     await postgresService.addDataSource(config);
 
     res.json(config);
@@ -163,13 +167,13 @@ router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     
-    if (!dataSources.has(id)) {
+    const source = await datasourceRepository.findByUid(id);
+    if (!source) {
       return res.status(404).json({ error: 'Data source not found' });
     }
 
     await postgresService.removeDataSource(id);
-    dataSources.delete(id);
-    await saveDataSources();
+    await datasourceRepository.delete(id);
 
     res.status(204).send();
   } catch (error) {
@@ -181,12 +185,17 @@ router.delete('/:id', async (req: Request, res: Response) => {
 });
 
 // GET /api/datasources/debug - Debug endpoint
-router.get('/debug', (req: Request, res: Response) => {
-  res.json({
-    totalDataSources: dataSources.size,
-    dataSourceIds: Array.from(dataSources.keys()),
-    postgresConnections: postgresService.getConnectionIds()
-  });
+router.get('/debug', async (req: Request, res: Response) => {
+  try {
+    const sources = await datasourceRepository.findAll();
+    res.json({
+      totalDataSources: sources.length,
+      dataSourceIds: sources.map(s => s.uid),
+      postgresConnections: postgresService.getConnectionIds()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch debug info' });
+  }
 });
 
 export default router;
