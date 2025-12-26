@@ -37,8 +37,18 @@ export default function DashboardEditorPage() {
       }
       
       // 1. Try to load from localStorage FIRST (Persistence)
-      const savedDashboards = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
-      const foundInStorage = savedDashboards.find((d: any) => d.id === dashboardId || d.uid === dashboardId);
+      let savedDashboards = [];
+      try {
+        savedDashboards = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
+      } catch (e) {
+        console.error('Failed to parse localStorage dashboards:', e);
+        savedDashboards = [];
+      }
+
+      // Use loose comparison or string conversion to handle number/string ID mismatches
+      const foundInStorage = savedDashboards.find((d: any) => 
+        String(d.id) === String(dashboardId) || String(d.uid) === String(dashboardId)
+      );
       
       if (foundInStorage) {
         console.log('Loading dashboard from localStorage:', foundInStorage.id, 'panels:', foundInStorage.panels?.length || 0);
@@ -66,10 +76,40 @@ export default function DashboardEditorPage() {
         setSavedDashboard(null);
         // New/unsaved dashboards should start in edit mode
         setEditMode(dashboard.isNew || false);
-      } else {
-        // Dashboard not found anywhere, redirect to dashboards list
-        navigate("/dashboards");
-      }
+        return;
+      } 
+      
+      // 3. Fallback: Check backend API (in case sidebar misrouted or it's a backend dashboard)
+      // We fetch the list because we need to match by ID or UID, and /uid endpoint requires UID
+      fetch('http://localhost:3002/api/dashboards')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) {
+            const foundBackend = data.find((d: any) => 
+              String(d.id) === String(dashboardId) || String(d.uid) === String(dashboardId)
+            );
+            
+            if (foundBackend) {
+              console.log('Found dashboard in backend fallback:', foundBackend);
+              // Backend dashboards might need panels fetched separately if list doesn't have them
+              // But for now let's assume list has them or we load what we have
+              // If backend dashboard viewing requires specific viewer, we might need to redirect
+              // But if we are here, we try to render it.
+              setSavedDashboard(foundBackend);
+              setCurrentDashboard(null);
+              setEditMode(false);
+              return;
+            }
+          }
+          // If still not found, redirect
+          console.warn('Dashboard not found anywhere, redirecting');
+          navigate("/dashboards");
+        })
+        .catch(err => {
+          console.error('Failed to fetch from backend fallback:', err);
+          navigate("/dashboards");
+        });
+
     } else {
       // Creating new dashboard OR opening existing draft
       // Check if there's already an unsaved draft
@@ -138,6 +178,35 @@ export default function DashboardEditorPage() {
     panels: dashboardData?.panels
   });
 
+  const handleBackendSave = async (dashboardData: any) => {
+    try {
+      // Check if this dashboard should be saved to backend
+      // We'll save to backend if it was originally from backend OR if we want to persist all saves
+      const apiKey = localStorage.getItem('grafana_api_key') || "gm_61f62cdbcbbe14d4bb4eb3631cf6a49a4a73ee138b899796a32ac387fab76242";
+      
+      const response = await fetch('http://localhost:3002/api/dashboards/db', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          dashboard: {
+            ...dashboardData,
+            overwrite: true
+          },
+          overwrite: true
+        })
+      });
+
+      if (response.ok) {
+        console.log('Dashboard also persisted to backend JSON');
+      }
+    } catch (error) {
+      console.error('Failed to sync to backend:', error);
+    }
+  };
+
   return (
     <DashboardProvider
       key={`${dashboardData.id}-${dashboardData.panels?.length || 0}`} // Force re-render when panels change
@@ -148,6 +217,7 @@ export default function DashboardEditorPage() {
       isNewDashboard={dashboardData.isNew || false}
       dashboardId={dashboardData.id}
       initialEditMode={editMode}
+      onSave={handleBackendSave}
     >
       <DashboardContent />
       {currentDashboard && (

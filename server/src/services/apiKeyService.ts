@@ -8,7 +8,23 @@ class ApiKeyService {
   private readonly storageFile = path.join(process.cwd(), 'data', 'api-keys.json');
 
   constructor() {
-    this.loadApiKeys();
+    this.loadApiKeys().then(() => this.initializeDefaultApiKey());
+  }
+
+  private async initializeDefaultApiKey(): Promise<void> {
+    if (this.apiKeys.size === 0) {
+      const defaultKey = 'gm_61f62cdbcbbe14d4bb4eb3631cf6a49a4a73ee138b899796a32ac387fab76242';
+      const apiKey: ApiKey = {
+        id: crypto.randomUUID(),
+        name: 'Default Admin Key',
+        key: defaultKey,
+        role: 'Admin',
+        created: new Date()
+      };
+      this.apiKeys.set(defaultKey, apiKey);
+      await this.saveApiKeys();
+      console.log('🔑 Created default API key for dashboard operations');
+    }
   }
 
   private async ensureDataDirectory(): Promise<void> {

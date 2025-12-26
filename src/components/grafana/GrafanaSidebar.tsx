@@ -65,6 +65,7 @@ export function GrafanaSidebar() {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [movingDashboard, setMovingDashboard] = useState<any>(null);
   const [savedDashboards, setSavedDashboards] = useState<any[]>([]);
+  const [backendDashboards, setBackendDashboards] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -96,8 +97,28 @@ export function GrafanaSidebar() {
         setSavedDashboards([]);
       }
     };
+
+    const loadBackendDashboards = async () => {
+      try {
+        const response = await fetch('http://localhost:3002/api/dashboards');
+        if (response.ok) {
+          const data = await response.json();
+          // Map backend data to match expected structure
+          const mappedData = data.map((d: any) => ({
+            ...d,
+            folder: d.folderTitle || 'General',
+            // Ensure we have an ID for keys
+            id: d.id || d.uid
+          }));
+          setBackendDashboards(mappedData);
+        }
+      } catch (error) {
+        console.error('Failed to load backend dashboards:', error);
+      }
+    };
     
     loadSavedDashboards();
+    loadBackendDashboards();
     
     const handleStorageChange = () => {
       loadSavedDashboards();
@@ -166,7 +187,10 @@ export function GrafanaSidebar() {
   
   // Memoize expensive calculations
   const { savedDashboardsByFolder, allFolderNames } = useMemo(() => {
-    const byFolder = savedDashboards.reduce((acc, dashboard) => {
+    // Combine local saved dashboards with backend dashboards
+    const allDashboards = [...savedDashboards, ...backendDashboards];
+    
+    const byFolder = allDashboards.reduce((acc, dashboard) => {
       const folder = dashboard.folder || 'General';
       if (!acc[folder]) acc[folder] = [];
       acc[folder].push(dashboard);
@@ -176,7 +200,7 @@ export function GrafanaSidebar() {
     const folderNames = [...new Set([...Object.keys(byFolder), 'General'])];
     
     return { savedDashboardsByFolder: byFolder, allFolderNames: folderNames };
-  }, [savedDashboards]);
+  }, [savedDashboards, backendDashboards]);
 
   const menuItems: SidebarItem[] = [
     { icon: Home, label: "Home", href: "/" },
@@ -429,7 +453,13 @@ export function GrafanaSidebar() {
                                 {allDashboardsInFolder.map((dash) => (
                                   <li key={`dash-${dash.id}`} className="flex items-center group">
                                     <button
-                                      onClick={() => navigate(`/dashboard/${dash.id}`)}
+                                      onClick={() => {
+                                        if (dash.type === 'dash-db' || dash.url) {
+                                          navigate(dash.url || `/d/${dash.uid}/${dash.slug}`);
+                                        } else {
+                                          navigate(`/dashboard/${dash.id}`);
+                                        }
+                                      }}
                                       className="flex-1 flex items-center gap-2 px-2 py-1 text-xs rounded-l transition-colors text-sidebar-foreground hover:text-foreground hover:bg-sidebar-accent/50 truncate"
                                     >
                                       <LayoutDashboard size={12} />

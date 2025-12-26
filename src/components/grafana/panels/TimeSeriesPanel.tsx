@@ -134,10 +134,10 @@ export function TimeSeriesPanel({ panelId, title, data, dataKeys, csvTimeSeriesD
       "grafana-panel h-full flex flex-col", 
       isFullscreen && "fixed inset-4 z-50",
       isEditMode && "cursor-pointer hover:ring-2 hover:ring-primary/50"
-    )} onClick={isEditMode && !showMenu ? handleEdit : undefined}>
+    )} >
       <div className="grafana-panel-header">
         <h3 className="grafana-panel-title">{title}</h3>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 panel-header-actions">
           <button 
             onClick={(e) => {
               e.stopPropagation();

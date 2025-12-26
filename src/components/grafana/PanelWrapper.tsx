@@ -156,7 +156,15 @@ export function PanelWrapper({ panel, children }: PanelWrapperProps) {
           isEditMode && "ring-2 ring-transparent hover:ring-primary/50 rounded-lg transition-all cursor-pointer"
         )}
         onClick={(e) => {
-          if (isEditMode && !(e.target as Element).closest('.panel-menu') && !(e.target as Element).closest('.resize-handle')) {
+          // Don't trigger edit if clicking on a button, menu, or resize handle
+          const target = e.target as Element;
+          if (
+            isEditMode && 
+            !target.closest('.panel-menu') && 
+            !target.closest('.resize-handle') &&
+            !target.closest('button') &&
+            !target.closest('.panel-header-actions')
+          ) {
             handleEdit();
           }
         }}

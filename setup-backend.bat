@@ -18,5 +18,5 @@ echo To start the backend server:
 echo   cd server
 echo   npm run dev
 echo.
-echo Backend will run on http://localhost:3001
+echo Backend will run on http://localhost:3002
 pause

@@ -12,6 +12,7 @@ import ConnectionsPage from "./pages/ConnectionsPage";
 import AdminPage from "./pages/AdminPage";
 import NotFound from "./pages/NotFound";
 import DashboardEditorPage from "./pages/DashboardEditorPage";
+import BackendDashboardViewer from "./pages/BackendDashboardViewer";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/dashboards" element={<DashboardsPage />} />
             <Route path="/dashboards/new" element={<DashboardEditorPage />} />
             <Route path="/dashboard/:dashboardId" element={<DashboardEditorPage />} />
+            <Route path="/d/:uid/:slug" element={<BackendDashboardViewer />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/alerting/*" element={<AlertingPage />} />
             <Route path="/connections/*" element={<ConnectionsPage />} />

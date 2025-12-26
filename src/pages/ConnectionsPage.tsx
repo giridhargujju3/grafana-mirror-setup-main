@@ -132,6 +132,20 @@ function ConnectionsContent() {
                       </div>
                       <div className="text-sm text-muted-foreground">{source.type}</div>
                       <div className="text-sm text-muted-foreground">{source.url}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <code className="text-xs bg-secondary px-1 py-0.5 rounded text-muted-foreground font-mono">
+                          {source.id}
+                        </code>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(source.id);
+                            toast.success('UID copied to clipboard');
+                          }}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Copy UID
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

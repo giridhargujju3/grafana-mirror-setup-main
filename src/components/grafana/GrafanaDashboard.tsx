@@ -186,7 +186,13 @@ function DashboardContent() {
               panelId={panel.id}
               title={panel.title}
               queryResult={panel.options.queryResult}
-              layout={panel.options.layout || "horizontal"}
+              layout={panel.options.layout}
+              stacking={panel.options.stacking}
+              xAxisKey={panel.options.xAxisKey}
+              xTickLabelRotation={panel.options.xTickLabelRotation}
+              showValues={panel.options.showValues}
+              barWidth={panel.options.barWidth}
+              barRadius={panel.options.barRadius}
             />
           );
         }
@@ -197,7 +203,12 @@ function DashboardContent() {
               panelId={panel.id}
               title={panel.title}
               csvBarData={panel.options.csvBarData}
-              layout={panel.options.layout || "horizontal"}
+              layout={panel.options.layout}
+              stacking={panel.options.stacking}
+              xTickLabelRotation={panel.options.xTickLabelRotation}
+              showValues={panel.options.showValues}
+              barWidth={panel.options.barWidth}
+              barRadius={panel.options.barRadius}
             />
           );
         }
@@ -207,7 +218,12 @@ function DashboardContent() {
             panelId={panel.id}
             title={panel.title}
             data={requestsData}
-            layout={panel.options.layout || "horizontal"}
+            layout={panel.options.layout}
+            stacking={panel.options.stacking}
+            xTickLabelRotation={panel.options.xTickLabelRotation}
+            showValues={panel.options.showValues}
+            barWidth={panel.options.barWidth}
+            barRadius={panel.options.barRadius}
             dataKeys={[
               { key: "requests", color: "hsl(199, 89%, 48%)", name: "Requests" },
               { key: "errors", color: "hsl(0, 72%, 51%)", name: "Errors" },

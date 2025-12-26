@@ -1,17 +1,17 @@
 [
   {
-    "name": "generaldemo",
+    "name": "ss",
     "type": "postgres",
-    "url": "postgresql://postgres:root@localhost:5432/copilot",
-    "database": "copilot",
+    "url": "postgresql://postgres:root@localhost:5432/skew_data",
+    "database": "skew_data",
     "user": "postgres",
     "password": "root",
     "sslMode": "disable",
     "maxOpenConns": 10,
-    "id": "ds-1766489644311"
+    "id": "ds-1766647484377"
   },
   {
-    "name": "grafana-panel",
+    "name": "panel-test",
     "type": "postgres",
     "url": "postgresql://postgres:root@localhost:5432/grafana",
     "database": "grafana",
@@ -19,6 +19,6 @@
     "password": "root",
     "sslMode": "disable",
     "maxOpenConns": 10,
-    "id": "ds-1766560501878"
+    "id": "ds-1766656406607"
   }
 ]

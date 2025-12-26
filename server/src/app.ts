@@ -70,4 +70,4 @@ app.listen(PORT, () => {
   console.log(`📋 Dashboards: http://localhost:${PORT}/api/dashboards`);
 });
 
-export default app;
+

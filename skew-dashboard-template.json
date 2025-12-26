@@ -1,0 +1,242 @@
+{
+  "id": null,
+  "uid": "skew-dashboard-001",
+  "title": "Skew Dashboard - skew_final_csv",
+  "tags": ["skew", "analytics", "performance"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "current": {
+          "selected": false,
+          "text": "skew_data",
+          "value": "skew_data"
+        },
+        "hide": 0,
+        "includeAll": false,
+        "label": "Table Name",
+        "multi": false,
+        "name": "TABLE_NAME",
+        "options": [
+          {
+            "selected": true,
+            "text": "skew_data",
+            "value": "skew_data"
+          }
+        ],
+        "query": "skew_data",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "custom"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "barchart",
+      "title": "Skew Multi Corners",
+      "description": "Visualization of skew data across different corners",
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "h": 20,
+        "w": 24
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "ds-1766569335163",
+        "name": "skew_data"
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT * FROM skew_final_csv LIMIT 100",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "lineWidth": 1,
+            "fillOpacity": 80,
+            "gradientMode": "none",
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "dashed"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0.2": {
+                  "index": 0,
+                  "text": "target_skew"
+                }
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 0.2
+              },
+              {
+                "color": "red",
+                "value": 0.5
+              }
+            ]
+          },
+          "fieldMinMax": false,
+          "unit": "ns"
+        },
+        "overrides": []
+      },
+      "options": {
+        "orientation": "auto",
+        "xTickLabelRotation": 30,
+        "xTickLabelSpacing": 0,
+        "showValue": "auto",
+        "stacking": "none",
+        "groupWidth": 0.7,
+        "barWidth": 0.97,
+        "barRadius": 0,
+        "fullHighlight": false,
+        "tooltip": {
+          "mode": "single",
+          "sort": "none",
+          "hideZeros": false
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "right",
+          "calcs": []
+        }
+      }
+    },
+    {
+      "id": 2,
+      "type": "table",
+      "title": "Skew Data Table",
+      "description": "Detailed table view of skew metrics and data points",
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "h": 19,
+        "w": 24
+      },
+      "datasource": {
+        "type": "postgres",
+        "uid": "ds-1766569335163",
+        "name": "skew_data"
+      },
+      "targets": [
+        {
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT * FROM skew_final_csv LIMIT 1000",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "color-text",
+              "wrapText": false
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "#EAB839",
+                "value": 0.2
+              },
+              {
+                "color": "red",
+                "value": 0.8
+              }
+            ]
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "skew_group--delay_corner"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 320
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": true,
+          "reducer": [
+            "sum"
+          ],
+          "countRows": false,
+          "fields": ""
+        },
+        "sortBy": []
+      }
+    }
+  ],
+  "folderId": 0,
+  "folderTitle": "General",
+  "folderUid": "general",
+  "style": "dark",
+  "weekStart": "",
+  "fiscalYearStartMonth": 0
+}

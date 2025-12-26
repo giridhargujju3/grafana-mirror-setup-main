@@ -89,9 +89,11 @@ export function StatPanel({
     <div className="grafana-panel h-full flex flex-col">
       <div className="grafana-panel-header">
         <h3 className="grafana-panel-title">{title}</h3>
-        <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground">
-          <MoreVertical size={14} />
-        </button>
+        <div className="panel-header-actions">
+          <button className="p-1 rounded hover:bg-secondary/50 text-muted-foreground" onClick={(e) => e.stopPropagation()}>
+            <MoreVertical size={14} />
+          </button>
+        </div>
       </div>
       <div className="grafana-panel-content flex-1 flex flex-col items-center justify-center relative overflow-hidden">
         {/* Background accent */}

@@ -1,0 +1,192 @@
+[
+  {
+    "id": 1766732655469,
+    "uid": "skew-dashboard-001",
+    "title": "Skew - skew_information",
+    "tags": [
+      "skew",
+      "analytics",
+      "performance"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 39,
+    "version": 2,
+    "refresh": "30s",
+    "time": {
+      "from": "now-6h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "type": "barchart",
+        "title": "Skew Multi Corners",
+        "description": "Visualization of skew data across different corners",
+        "gridPos": {
+          "x": 0,
+          "y": 0,
+          "h": 20,
+          "w": 24
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "ds-1766647484377"
+        },
+        "targets": [
+          {
+            "refId": "A",
+            "rawQuery": true,
+            "rawSql": "SELECT * FROM skew_info LIMIT 100",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "lineWidth": 1,
+              "fillOpacity": 80,
+              "gradientMode": "none",
+              "axisPlacement": "auto",
+              "axisLabel": "",
+              "axisColorMode": "text",
+              "axisBorderShow": false,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "axisCenteredZero": false,
+              "hideFrom": {
+                "tooltip": false,
+                "viz": false,
+                "legend": false
+              },
+              "thresholdsStyle": {
+                "mode": "dashed"
+              }
+            },
+            "color": {
+              "mode": "palette-classic"
+            },
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 0.2
+                },
+                {
+                  "color": "red",
+                  "value": 0.5
+                }
+              ]
+            },
+            "unit": "short"
+          },
+          "overrides": []
+        },
+        "options": {
+          "orientation": "auto",
+          "xTickLabelRotation": 30,
+          "xTickLabelSpacing": 0,
+          "showValue": "auto",
+          "stacking": "none",
+          "groupWidth": 0.7,
+          "barWidth": 0.97,
+          "barRadius": 0,
+          "fullHighlight": false,
+          "tooltip": {
+            "mode": "single",
+            "sort": "none",
+            "hideZeros": false
+          },
+          "legend": {
+            "showLegend": true,
+            "displayMode": "list",
+            "placement": "right",
+            "calcs": []
+          }
+        }
+      },
+      {
+        "id": 2,
+        "type": "table",
+        "title": "Skew Data Table",
+        "description": "Detailed table view of skew metrics and data points",
+        "gridPos": {
+          "x": 0,
+          "y": 20,
+          "h": 19,
+          "w": 24
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "ds-1766647484377"
+        },
+        "targets": [
+          {
+            "refId": "B",
+            "rawQuery": true,
+            "rawSql": "SELECT * FROM skew_info",
+            "format": "table"
+          }
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "color-text",
+                "wrapText": false
+              },
+              "inspect": false
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "#EAB839",
+                  "value": 0.2
+                },
+                {
+                  "color": "red",
+                  "value": 0.8
+                }
+              ]
+            },
+            "color": {
+              "mode": "palette-classic"
+            }
+          },
+          "overrides": []
+        },
+        "options": {
+          "showHeader": true,
+          "cellHeight": "sm",
+          "footer": {
+            "show": true,
+            "reducer": [
+              "sum"
+            ],
+            "countRows": false,
+            "fields": ""
+          },
+          "sortBy": []
+        }
+      }
+    ],
+    "folderId": 0,
+    "folderTitle": "General",
+    "folderUid": "general",
+    "style": "dark",
+    "slug": "skew-skew-information",
+    "updated": "2025-12-26T07:04:15.469Z"
+  }
+]

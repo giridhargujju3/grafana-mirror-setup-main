@@ -34,11 +34,13 @@ const visualizationTypes = [
 ];
 
 const CHART_COLORS = [
-  "hsl(24, 100%, 50%)",
-  "hsl(199, 89%, 48%)",
-  "hsl(142, 71%, 45%)",
-  "hsl(270, 70%, 60%)",
-  "hsl(38, 92%, 50%)",
+  "#7EB26D", // green
+  "#EAB839", // yellow
+  "#6ED0E0", // light blue
+  "#EF843C", // orange
+  "#E24D42", // red
+  "#1F78C1", // blue
+  "#BA43A9", // purple
 ];
 
 // Generate preview data based on visualization type
@@ -83,6 +85,22 @@ export function PanelEditorModal() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [vizType, setVizType] = useState<string>("timeseries");
+  const [barChartOptions, setBarChartOptions] = useState<{
+    layout: "horizontal" | "vertical";
+    stacking: "none" | "normal" | "percent";
+    xAxisKey?: string;
+    xTickLabelRotation: number;
+    showValues: "auto" | "always" | "never";
+    barWidth: number;
+    barRadius: number;
+  }>({ 
+    layout: "vertical", 
+    stacking: "none", 
+    xTickLabelRotation: 0,
+    showValues: "auto",
+    barWidth: 0.8,
+    barRadius: 2
+  });
   const [queries, setQueries] = useState<QueryTarget[]>([]);
   const [showVizDropdown, setShowVizDropdown] = useState(false);
   const [activeTab, setActiveTab] = useState<"query" | "transform" | "alert">("query");
@@ -102,7 +120,53 @@ export function PanelEditorModal() {
       setTitle(editingPanel.title);
       setDescription(editingPanel.description || "");
       setVizType(editingPanel.type);
-      setQueries(editingPanel.targets || [{ refId: "A", expr: "", datasource: "prometheus", queryMode: "code" }]);
+      if (editingPanel.type === "barchart") {
+        setBarChartOptions({
+          layout: editingPanel.options?.layout || "vertical",
+          stacking: editingPanel.options?.stacking || "none",
+          xAxisKey: editingPanel.options?.xAxisKey,
+          xTickLabelRotation: editingPanel.options?.xTickLabelRotation || 0,
+          showValues: editingPanel.options?.showValues || "auto",
+          barWidth: editingPanel.options?.barWidth || 0.6,
+          barRadius: editingPanel.options?.barRadius || 0,
+        });
+      }
+      // Map rawSql to expr for SQL panels if expr is missing
+      const mappedTargets = (editingPanel.targets || []).map(t => {
+        let dsId = t.datasource;
+        
+        // Handle datasource mapping
+        if (!dsId) {
+          if (editingPanel.datasource) {
+            if (typeof editingPanel.datasource === 'object') {
+              // If it's a postgres type, map to our local 'postgres' datasource id
+              if ((editingPanel.datasource as any).type === 'postgres') {
+                dsId = 'postgres';
+              } else {
+                dsId = (editingPanel.datasource as any).uid;
+              }
+            } else {
+              dsId = editingPanel.datasource;
+            }
+          } else {
+            dsId = "prometheus";
+          }
+        }
+
+        return {
+          ...t,
+          expr: t.expr || t.rawSql || "",
+          queryMode: t.queryMode || "code",
+          datasource: dsId
+        };
+      });
+      
+      setQueries(mappedTargets.length > 0 ? mappedTargets : [{ refId: "A", expr: "", datasource: editingPanel.datasource?.uid || "prometheus", queryMode: "code" }]);
+      
+      // Initialize query result if available
+      if (editingPanel.options?.queryResult) {
+        setQueryResult(editingPanel.options.queryResult);
+      }
     } else {
       console.log('Setting up for NEW panel with vizType:', selectedVizType || 'timeseries');
       setTitle("New Panel");
@@ -240,9 +304,22 @@ export function PanelEditorModal() {
       title,
       description,
       type: vizType as PanelConfig["type"],
-      targets: [...queries],
+      targets: queries.map(q => ({
+        ...q,
+        rawSql: q.expr, // Ensure rawSql is synced with expr for SQL panels
+      })),
       options: {
-        queryResult: queryResult,
+        ...(editingPanel?.options || {}),
+        queryResult: queryResult || editingPanel?.options?.queryResult,
+        ...(vizType === "barchart" ? {
+           layout: barChartOptions.layout,
+           stacking: barChartOptions.stacking,
+           xAxisKey: barChartOptions.xAxisKey,
+           xTickLabelRotation: barChartOptions.xTickLabelRotation,
+           showValues: barChartOptions.showValues,
+           barWidth: barChartOptions.barWidth,
+           barRadius: barChartOptions.barRadius,
+        } : {})
       },
     };
 
@@ -365,7 +442,13 @@ export function PanelEditorModal() {
           <BarChartPanel
             {...commonProps}
             data={previewData.slice(0, 8)}
-            layout="vertical"
+            layout={barChartOptions.layout}
+            stacking={barChartOptions.stacking}
+            xAxisKey={barChartOptions.xAxisKey}
+            xTickLabelRotation={barChartOptions.xTickLabelRotation}
+            showValues={barChartOptions.showValues}
+            barWidth={barChartOptions.barWidth}
+            barRadius={barChartOptions.barRadius}
           />
         );
       case "table":
@@ -489,19 +572,9 @@ export function PanelEditorModal() {
           </div>
 
           {/* Preview panel */}
-          <div className="h-1/2 border-b border-border p-4 bg-secondary/20">
-            <div className="grafana-panel h-full">
-              <div className="grafana-panel-header">
-                <h3 className="grafana-panel-title">{title || "Panel Preview"}</h3>
-                <div className="flex items-center gap-1">
-                  {isRunning && (
-                    <span className="text-xs text-grafana-blue animate-pulse">Running...</span>
-                  )}
-                </div>
-              </div>
-              <div className="grafana-panel-content h-[calc(100%-48px)]">
-                {renderPreview()}
-              </div>
+          <div className="h-1/2 border-b border-border bg-secondary/10 p-4">
+            <div className="h-full w-full">
+               {renderPreview()}
             </div>
           </div>
 
@@ -866,6 +939,140 @@ export function PanelEditorModal() {
                   ))}
                 </div>
               </div>
+
+              {vizType === "barchart" && (
+                <div className="p-4 border-b border-border">
+                  <h3 className="font-medium text-foreground mb-3">Bar chart</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">X Axis</label>
+                      <select 
+                        className="w-full px-3 py-2 bg-input border border-border rounded text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        value={barChartOptions.xAxisKey || ""}
+                        onChange={(e) => setBarChartOptions({...barChartOptions, xAxisKey: e.target.value || undefined})}
+                      >
+                        <option value="">Auto</option>
+                        {queryResult?.columns?.map((col: string) => (
+                          <option key={col} value={col}>{col}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Orientation</label>
+                      <div className="flex bg-input rounded border border-border p-1">
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.layout === "horizontal" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, layout: "horizontal"})}
+                        >
+                          Horizontal
+                        </button>
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.layout === "vertical" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, layout: "vertical"})}
+                        >
+                          Vertical
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Rotate x-axis tick labels</label>
+                      <div className="flex items-center gap-2">
+                         <input 
+                           type="range" 
+                           min="-90" 
+                           max="90" 
+                           step="15"
+                           value={barChartOptions.xTickLabelRotation}
+                           onChange={(e) => setBarChartOptions({...barChartOptions, xTickLabelRotation: Number(e.target.value)})}
+                           className="flex-1"
+                         />
+                         <input 
+                           type="number" 
+                           value={barChartOptions.xTickLabelRotation}
+                           onChange={(e) => setBarChartOptions({...barChartOptions, xTickLabelRotation: Number(e.target.value)})}
+                           className="w-16 px-2 py-1 bg-input border border-border rounded text-sm text-center"
+                         />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                       <label className="text-sm text-muted-foreground">Show values</label>
+                       <div className="flex bg-input rounded border border-border p-1">
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.showValues === "auto" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, showValues: "auto"})}
+                        >
+                          Auto
+                        </button>
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.showValues === "always" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, showValues: "always"})}
+                        >
+                          Always
+                        </button>
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.showValues === "never" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, showValues: "never"})}
+                        >
+                          Never
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm text-muted-foreground">Stacking</label>
+                      <div className="flex bg-input rounded border border-border p-1">
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.stacking === "none" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, stacking: "none"})}
+                        >
+                          Off
+                        </button>
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.stacking === "normal" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, stacking: "normal"})}
+                        >
+                          Normal
+                        </button>
+                        <button
+                          className={cn("flex-1 text-xs py-1 rounded transition-colors", barChartOptions.stacking === "percent" ? "bg-secondary text-foreground font-medium" : "text-muted-foreground hover:text-foreground")}
+                          onClick={() => setBarChartOptions({...barChartOptions, stacking: "percent"})}
+                        >
+                          100%
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                       <label className="text-sm text-muted-foreground">Bar width ({(barChartOptions.barWidth * 100).toFixed(0)}%)</label>
+                       <input 
+                         type="range" 
+                         min="0.1" 
+                         max="1.0" 
+                         step="0.05"
+                         value={barChartOptions.barWidth}
+                         onChange={(e) => setBarChartOptions({...barChartOptions, barWidth: Number(e.target.value)})}
+                         className="w-full"
+                       />
+                    </div>
+                    
+                    <div className="space-y-2">
+                       <label className="text-sm text-muted-foreground">Bar radius ({barChartOptions.barRadius}px)</label>
+                       <input 
+                         type="range" 
+                         min="0" 
+                         max="20" 
+                         step="1"
+                         value={barChartOptions.barRadius}
+                         onChange={(e) => setBarChartOptions({...barChartOptions, barRadius: Number(e.target.value)})}
+                         className="w-full"
+                       />
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="p-4">
                 <h3 className="font-medium text-foreground mb-3">Standard options</h3>

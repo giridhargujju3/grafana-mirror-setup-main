@@ -334,6 +334,7 @@ interface DashboardProviderProps {
   isNewDashboard?: boolean;
   dashboardId?: string;
   initialEditMode?: boolean;
+  onSave?: (dashboardData: any) => Promise<void>;
 }
 
 export function DashboardProvider({ 
@@ -345,6 +346,7 @@ export function DashboardProvider({
   isNewDashboard = false,
   dashboardId,
   initialEditMode = false,
+  onSave,
 }: DashboardProviderProps) {
   const [timeRange, setTimeRange] = useState("Last 6 hours");
   const [refreshInterval, setRefreshInterval] = useState("Off");
@@ -578,6 +580,14 @@ export function DashboardProvider({
     localStorage.setItem('grafana-dashboards', JSON.stringify(savedDashboards));
     console.log('Dashboard saved to localStorage. Total dashboards:', savedDashboards.length);
     
+    // If an onSave callback is provided (e.g. for backend sync), call it
+    if (onSave) {
+      console.log('Calling external onSave callback for backend synchronization');
+      onSave(dashboardData).catch(err => {
+        console.error('External onSave failed:', err);
+      });
+    }
+    
     setDashboardState(prev => ({
       ...prev,
       isDirty: false,
@@ -590,7 +600,7 @@ export function DashboardProvider({
     if (window.location.pathname !== `/dashboard/${newDashboardId}`) {
       window.history.replaceState(null, '', `/dashboard/${newDashboardId}`);
     }
-  }, [panels, dashboardTitle, dashboardTags, dashboardFolder, timeRange, refreshInterval, isStarred, dashboardState.isNew, dashboardId]);
+  }, [panels, dashboardTitle, dashboardTags, dashboardFolder, timeRange, refreshInterval, isStarred, dashboardState.isNew, dashboardId, onSave]);
 
   const discardChanges = useCallback(() => {
     setPanels(dashboardState.originalPanels);

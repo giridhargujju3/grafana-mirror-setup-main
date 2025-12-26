@@ -12,14 +12,28 @@ function DashboardsContent() {
   const { dashboards, createNewDashboard, deleteDashboard } = useDashboardRegistry();
   const [showFolderModal, setShowFolderModal] = useState(false);
   const [savedDashboards, setSavedDashboards] = useState<any[]>([]);
+  const [backendDashboards, setBackendDashboards] = useState<any[]>([]);
 
   useEffect(() => {
     const loadSavedDashboards = () => {
       const saved = JSON.parse(localStorage.getItem('grafana-dashboards') || '[]');
       setSavedDashboards(saved);
     };
+
+    const loadBackendDashboards = async () => {
+      try {
+        const response = await fetch('http://localhost:3002/api/dashboards');
+        if (response.ok) {
+          const data = await response.json();
+          setBackendDashboards(data);
+        }
+      } catch (error) {
+        console.error('Failed to load backend dashboards:', error);
+      }
+    };
     
     loadSavedDashboards();
+    loadBackendDashboards();
     
     // Listen for storage changes to refresh the list
     const handleStorageChange = () => {
@@ -34,8 +48,8 @@ function DashboardsContent() {
   }, []);
 
   const starredDashboards = dashboards.filter(d => d.starred && !d.isNew);
-  const recentDashboards = [...dashboards.filter(d => !d.isNew), ...savedDashboards]
-    .sort((a, b) => new Date(b.updatedAt || b.savedAt).getTime() - new Date(a.updatedAt || a.savedAt).getTime());
+  const recentDashboards = [...dashboards.filter(d => !d.isNew), ...savedDashboards, ...backendDashboards]
+    .sort((a, b) => new Date(b.updatedAt || b.savedAt || b.created || 0).getTime() - new Date(a.updatedAt || a.savedAt || a.created || 0).getTime());
   const draftDashboards = dashboards.filter(d => d.isNew);
   
   // Group dashboards by folder
@@ -52,7 +66,10 @@ function DashboardsContent() {
   };
 
   const handleOpenDashboard = (dashboard: any) => {
-    if (dashboard.id) {
+    if (dashboard.type === 'dash-db') {
+      // For backend dashboards
+      navigate(`/d/${dashboard.uid}/${dashboard.slug || 'dashboard'}`);
+    } else if (dashboard.id) {
       // For saved dashboards, navigate with the dashboard data in view mode (not edit)
       navigate(`/dashboard/${dashboard.id}`, { state: { dashboardData: dashboard, editMode: false } });
     } else {
