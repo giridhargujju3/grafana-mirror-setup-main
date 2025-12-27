@@ -18,7 +18,8 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
     removePanel, 
     duplicatePanel,
     movePanel,
-    updatePanel
+    updatePanel,
+    showPanelEditor
   } = useDashboard();
   
   const [showMenu, setShowMenu] = useState(false);
@@ -70,7 +71,6 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
   };
 
   const handleResizeStart = (e: React.MouseEvent) => {
-    // Critical: Stop propagation to prevent parent Draggable from starting a drag
     e.stopPropagation();
     e.preventDefault();
     
@@ -87,7 +87,8 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
       initialGridW: panel.gridPos.w,
       initialGridH: panel.gridPos.h,
       gridX: panel.gridPos.x,
-      gridY: panel.gridPos.y
+      gridY: panel.gridPos.y,
+      lastUpdateTime: 0
     };
 
     document.addEventListener('mousemove', handleResizeMove);
@@ -97,12 +98,10 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
   const handleResizeMove = (e: MouseEvent) => {
     if (!panelRef.current) return;
     
-    // Cancel any pending animation frame
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
     }
 
-    // Use requestAnimationFrame for smooth updates
     animationFrameRef.current = requestAnimationFrame(() => {
       if (!panelRef.current) return;
       
@@ -110,24 +109,20 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
       const deltaX = e.clientX - startX;
       const deltaY = e.clientY - startY;
 
-      // Calculate new grid width
       const pixelsPerCol = initialGridW > 0 ? startW / initialGridW : 100;
       const colDelta = Math.round(deltaX / pixelsPerCol);
       const newGridW = Math.max(2, Math.min(12, initialGridW + colDelta));
 
-      // Calculate new grid height
       const pixelsPerRow = 72;
       const rowDelta = Math.round(deltaY / pixelsPerRow);
       const newGridH = Math.max(2, initialGridH + rowDelta);
 
-      // Apply resize directly to element for instant visual feedback
       const newHeight = newGridH * 72;
-      const newWidth = (newGridW / 12) * 100; // Convert grid width to percentage
+      const newWidth = (newGridW / 12) * 100;
       
       panelRef.current.style.height = `${newHeight}px`;
       panelRef.current.style.width = `${newWidth}%`;
 
-      // Throttle state updates to every 50ms for performance
       const now = Date.now();
       if ((newGridW !== panel.gridPos.w || newGridH !== panel.gridPos.h) && (now - lastUpdateTime > 50)) {
         resizeRef.current.lastUpdateTime = now;
@@ -147,12 +142,12 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
       panelRef.current.style.height = '';
       panelRef.current.style.width = '';
     }
+    document.body.style.cursor = '';
     setIsResizing(false);
     document.removeEventListener('mousemove', handleResizeMove);
     document.removeEventListener('mouseup', handleResizeEnd);
   };
 
-  // Cleanup listeners on unmount
   useEffect(() => {
     return () => {
       if (animationFrameRef.current) {
@@ -165,7 +160,6 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
 
   return (
     <>
-      {/* Maximized Overlay */}
       {isMaximized && (
         <div className="fixed inset-0 z-[100] bg-background p-4 flex flex-col animate-in fade-in duration-200">
           <div className="flex items-center justify-between mb-4 border-b border-border pb-2">
@@ -197,44 +191,34 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
       >
         {children}
         
-        {/* Drag overlay - entire panel except resize corner */}
-        {isEditMode && !isResizing && (
-          <div
-            {...dragHandleProps}
-            className="absolute cursor-grab active:cursor-grabbing"
-            style={{ 
-              top: 0,
-              left: 0,
-              right: '64px', // Exclude resize corner
-              bottom: '64px', // Exclude resize corner
-              zIndex: 1,
-              pointerEvents: 'auto'
-            }}
-          />
-        )}
-        
-        {/* Resize Handle - ONLY for resizing */}
-        {isEditMode && (
+        {/* Resize Handle - MUST render BEFORE drag overlay for proper event handling */}
+        {isEditMode && !showPanelEditor && (
           <div
             ref={resizeHandleRef}
-            className="resize-handle absolute bottom-0 right-0 w-16 h-16 flex items-end justify-end p-3"
+            className="resize-handle absolute bottom-0 right-0 cursor-se-resize"
             style={{ 
-              cursor: 'se-resize !important',
-              zIndex: 10000,
-              background: 'transparent',
+              width: '100px',
+              height: '100px',
+              zIndex: 10001,
               pointerEvents: 'auto',
               touchAction: 'none',
               userSelect: 'none'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.cursor = 'se-resize';
+              document.body.style.cursor = 'se-resize';
+            }}
+            onMouseLeave={(e) => {
+              if (!isResizing) {
+                document.body.style.cursor = '';
+              }
             }}
             onMouseDown={(e) => {
               e.nativeEvent.stopImmediatePropagation();
               e.stopPropagation();
               e.preventDefault();
+              document.body.style.cursor = 'se-resize';
               handleResizeStart(e);
-            }}
-            onMouseMove={(e) => {
-              // Ensure cursor stays as resize
-              e.currentTarget.style.cursor = 'se-resize';
             }}
             onClick={(e) => {
               e.nativeEvent.stopImmediatePropagation();
@@ -248,21 +232,40 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
             }}
             draggable={false}
           >
-            <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+            <div 
+              className="absolute bottom-2 right-2 opacity-60 group-hover:opacity-100 transition-opacity pointer-events-none"
+              style={{ width: '24px', height: '24px' }}
+            >
               <svg 
-                width="18" 
-                height="18" 
+                width="24" 
+                height="24" 
                 viewBox="0 0 6 6" 
                 fill="none" 
                 stroke="currentColor" 
-                strokeWidth="2.5" 
-                className="text-primary drop-shadow-lg"
+                strokeWidth="2" 
+                className="text-primary drop-shadow-md"
               >
                 <path d="M6 1L1 6" />
                 <path d="M6 3.5L3.5 6" />
               </svg>
             </div>
           </div>
+        )}
+        
+        {/* Drag overlay - entire panel except resize corner */}
+        {isEditMode && !isResizing && (
+          <div
+            {...dragHandleProps}
+            className="absolute cursor-grab active:cursor-grabbing"
+            style={{ 
+              top: 0,
+              left: 0,
+              right: '100px',
+              bottom: '100px',
+              zIndex: 1,
+              pointerEvents: 'auto'
+            }}
+          />
         )}
         
         {/* Edit mode overlay */}
@@ -295,7 +298,6 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
                 <Copy size={14} />
               </button>
               
-              {/* Move menu */}
               <div className="relative">
                 <button
                   onClick={(e) => { e.stopPropagation(); setShowMoveMenu(!showMoveMenu); }}
@@ -352,7 +354,6 @@ export function PanelWrapper({ panel, children, dragHandleProps }: PanelWrapperP
           </div>
         )}
 
-        {/* View mode - show menu on hover */}
         {!isEditMode && (
           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity panel-menu z-10">
             <div className="relative">

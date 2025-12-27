@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useDashboardRegistry, DashboardFolder } from "@/contexts/DashboardRegistryContext";
 import { FolderModal } from "./modals/FolderModal";
 import { MoveDashboardModal } from "./modals/MoveDashboardModal";
+import { NexusLogo } from "@/components/brand/NexusLogo";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/api";
 import {
@@ -68,8 +69,50 @@ export function GrafanaSidebar() {
   const [savedDashboards, setSavedDashboards] = useState<any[]>([]);
   const [backendDashboards, setBackendDashboards] = useState<any[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(256);
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = Math.max(200, Math.min(600, e.clientX));
+      setSidebarWidth(newWidth);
+      
+      if (newWidth < 120 && !sidebarCollapsed) {
+        setSidebarCollapsed(true);
+      } else if (newWidth >= 120 && sidebarCollapsed) {
+        setSidebarCollapsed(false);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing, sidebarCollapsed, setSidebarCollapsed]);
 
   // Handle mobile detection and auto-collapse
   useEffect(() => {
@@ -306,12 +349,15 @@ export function GrafanaSidebar() {
 
   return (
     <aside
+      ref={sidebarRef}
       className={cn(
-        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 ease-in-out flex-shrink-0 z-50",
-        sidebarCollapsed ? "w-16" : "w-64",
-        isMobile && !sidebarCollapsed && "fixed inset-y-0 left-0 shadow-2xl"
+        "h-screen bg-sidebar border-r border-sidebar-border flex flex-col transition-all flex-shrink-0 z-50 relative",
+        sidebarCollapsed && "w-16",
+        isMobile && !sidebarCollapsed && "fixed inset-y-0 left-0 shadow-2xl",
+        !isResizing && "duration-300 ease-in-out"
       )}
       style={{ 
+        width: sidebarCollapsed ? '64px' : `${sidebarWidth}px`,
         boxShadow: sidebarCollapsed ? 'none' : '2px 0 8px rgba(0, 0, 0, 0.3)',
       }}
     >
@@ -320,14 +366,17 @@ export function GrafanaSidebar() {
         {!sidebarCollapsed && (
           <button
             onClick={() => navigate("/")}
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity animate-fade-in"
+            className="hover:opacity-90 transition-all duration-300 animate-fade-in"
           >
-            <div className="w-8 h-8 rounded-md bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
-              <svg viewBox="0 0 24 24" className="w-5 h-5 text-primary-foreground" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
-              </svg>
-            </div>
-            <span className="font-semibold text-foreground tracking-tight">Grafana</span>
+            <NexusLogo size={32} animate={true} showText={true} />
+          </button>
+        )}
+        {sidebarCollapsed && (
+          <button
+            onClick={() => navigate("/")}
+            className="hover:opacity-90 transition-all duration-300"
+          >
+            <NexusLogo size={32} animate={true} showText={false} />
           </button>
         )}
         <button
@@ -674,6 +723,20 @@ export function GrafanaSidebar() {
         onClose={() => setShowMoveModal(false)} 
         dashboard={movingDashboard}
       />
+
+      {/* Resize handle */}
+      {!sidebarCollapsed && !isMobile && (
+        <div
+          onMouseDown={handleResizeStart}
+          className={cn(
+            "absolute top-0 right-0 h-full w-1 cursor-col-resize group hover:bg-primary/20 transition-colors z-50",
+            isResizing && "bg-primary/30"
+          )}
+          style={{ touchAction: 'none' }}
+        >
+          <div className="absolute top-1/2 -translate-y-1/2 right-0 w-1 h-12 bg-primary/0 group-hover:bg-primary/50 transition-colors rounded-l" />
+        </div>
+      )}
     </aside>
   );
 }

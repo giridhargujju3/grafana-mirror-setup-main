@@ -5,6 +5,7 @@ export interface DataSourceConfig {
   type: 'postgres' | 'mysql' | 'prometheus' | 'loki';
   url: string;
   database?: string;
+  dashboard_link?: string;
   user?: string;
   password?: string;
   sslMode?: 'disable' | 'require' | 'verify-ca' | 'verify-full';

@@ -296,4 +296,17 @@
     backdrop-filter: blur(12px) saturate(180%);
     background-color: rgba(17, 18, 23, 0.8);
   }
+
+  /* Resize handle cursor fix */
+  .resize-handle {
+    cursor: se-resize !important;
+  }
+
+  .resize-handle * {
+    cursor: se-resize !important;
+  }
+
+  .cursor-se-resize {
+    cursor: se-resize !important;
+  }
 }

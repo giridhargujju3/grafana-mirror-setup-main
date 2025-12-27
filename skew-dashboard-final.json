@@ -1,6 +1,6 @@
 {
   "id": null,
-  "uid": "skew-dashboard-testing",
+  "uid": "skew-panels_editor",
   "title": "skew_data_testing",
   "tags": ["skew", "analytics", "performance"],
   "timezone": "browser",
@@ -25,7 +25,7 @@
       },
       "datasource": {
         "type": "postgres",
-        "uid": "ds-1766758115448"
+        "uid": "ds-1766823035205"
       },
       "targets": [
         {
@@ -118,7 +118,7 @@
       },
       "datasource": {
         "type": "postgres",
-        "uid": "ds-1766758115448"
+        "uid": "ds-1766823035205"
       },
       "targets": [
         {

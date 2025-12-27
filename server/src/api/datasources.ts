@@ -41,6 +41,7 @@ router.get('/', async (req: Request, res: Response) => {
       type: source.type,
       url: source.url,
       database: source.database,
+      dashboard_link: source.dashboard_link,
       user: 'postgres',
       password: 'root',
       sslMode: 'disable',
@@ -75,7 +76,8 @@ router.post('/', async (req: Request, res: Response) => {
       datasource_name: config.name,
       type: config.type,
       url: config.url,
-      database: config.database
+      database: config.database,
+      dashboard_link: config.dashboard_link
     });
     
     await postgresService.addDataSource(config);
@@ -122,6 +124,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       type: source.type,
       url: source.url,
       database: source.database,
+      dashboard_link: source.dashboard_link,
       user: 'postgres',
       password: 'root',
       sslMode: 'disable',
@@ -149,7 +152,8 @@ router.put('/:id', async (req: Request, res: Response) => {
       datasource_name: config.name,
       type: config.type,
       url: config.url,
-      database: config.database
+      database: config.database,
+      dashboard_link: config.dashboard_link
     });
     await postgresService.addDataSource(config);
 
